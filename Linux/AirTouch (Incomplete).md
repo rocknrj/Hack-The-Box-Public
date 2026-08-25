@@ -73,9 +73,9 @@ ssh consultant@10.129.4.199
 
 > RxBlZhLmOkacNWScmZ6D
 ```
-![[Pasted image 20260225092829.png]]
+![Pasted image 20260225092829](../Attachments/Pasted%20image%2020260225092829.png)
 - There is a diagram which I can take from the home folder:
-![[Pasted image 20260225103239.png]]
+![Pasted image 20260225103239](../Attachments/Pasted%20image%2020260225103239.png)
 - Checking sudo privileges I have all:
 ```
 sudo -l
@@ -87,16 +87,16 @@ Matching Defaults entries for consultant on AirTouch-Consultant:
 User consultant may run the following commands on AirTouch-Consultant:
     (ALL) NOPASSWD: ALL
 ```
-![[Pasted image 20260225092912.png]]
+![Pasted image 20260225092912](../Attachments/Pasted%20image%2020260225092912.png)
 - I switch to root user. Also this feels like a container we need to escape.
 ```
 sudo su
 ```
-![[Pasted image 20260225092951.png]]
+![Pasted image 20260225092951](../Attachments/Pasted%20image%2020260225092951.png)
 
 - In root directory I see an interesting folder `eaphammer`
 	- can't find much
 - Checking `ip a` we see a lot of interfaces:
-![[Pasted image 20260225102943.png]]
+![Pasted image 20260225102943](../Attachments/Pasted%20image%2020260225102943.png)
 
 - From this and the picture we can see that we would need to access Corp VLAN to compromise the target.

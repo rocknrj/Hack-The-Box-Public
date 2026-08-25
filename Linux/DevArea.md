@@ -110,25 +110,25 @@ Service Info: Host: _; OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
 - 4 http ports open : 80, 8080, 8500 and 8888
 
 ### 80
-![[Pasted image 20260330040031.png]]
+![Pasted image 20260330040031](../Attachments/Pasted%20image%2020260330040031.png)
 
 
 
 ### 8080
-![[Pasted image 20260330040052.png]]
+![Pasted image 20260330040052](../Attachments/Pasted%20image%2020260330040052.png)
 
 ### 8500
 - Proxy server
 
-![[Pasted image 20260330040121.png]]
+![Pasted image 20260330040121](../Attachments/Pasted%20image%2020260330040121.png)
 
 #### 8888
 - HoverFly login:
-![[Pasted image 20260330040145.png]]
+![Pasted image 20260330040145](../Attachments/Pasted%20image%2020260330040145.png)
 
 ----
 - on port 8080 Jetty is running and if we find (not sur ehow) the sub path `/employeeservice` we can see CXF is running on with with SOAP:
-![[Pasted image 20260330052715.png]]
+![Pasted image 20260330052715](../Attachments/Pasted%20image%2020260330052715.png)
 
 - Using the `?wsdl` header we get some more info:
 ```
@@ -188,7 +188,7 @@ Service Info: Host: _; OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
 </wsdl:service>
 </wsdl:definitions>
 ```
-![[Pasted image 20260330053212.png]]
+![Pasted image 20260330053212](../Attachments/Pasted%20image%2020260330053212.png)
 
 - `type xs:string` catches my eye and looking online i find a CVE : CVE-2022-46364
 - Based on this i created a payload file and sent it as a curl command to grab `/etc/passwd`
@@ -344,7 +344,7 @@ WantedBy=multi-user.target
 ```
 - Credentials : `admin`:`O7IJ27MyyXiU`
 - I manage to login to hoverfly dashboard: 
-![[Pasted image 20260330060905.png]]
+![Pasted image 20260330060905](../Attachments/Pasted%20image%2020260330060905.png)
 
 - Furthermmore when looking online I found a possible vulnerability for RCE: 
 https://github.com/SpectoLabs/hoverfly/security/advisories/GHSA-r4h8-hfp2-ggmf
@@ -380,10 +380,10 @@ curl -s -X PUT http://devarea.htb:8888/api/v2/hoverfly/middleware \
 ```
 
 - I grab a shell as `dev_ryan`:
-![[Pasted image 20260330071321.png]]
+![Pasted image 20260330071321](../Attachments/Pasted%20image%2020260330071321.png)
 
 - I get User flag:
-![[Pasted image 20260330071405.png]]
+![Pasted image 20260330071405](../Attachments/Pasted%20image%2020260330071405.png)
 
 ### Root
 - Checking sudo permissions we can pass a command as root. This command calls /bin/bash as shown:
@@ -397,7 +397,7 @@ User dev_ryan may run the following commands on devarea:
     (root) NOPASSWD: /opt/syswatch/syswatch.sh, !/opt/syswatch/syswatch.sh
         web-stop, !/opt/syswatch/syswatch.sh web-restart
 ```
-![[Pasted image 20260330082941.png]]
+![Pasted image 20260330082941](../Attachments/Pasted%20image%2020260330082941.png)
 
 - Can also see bash is world writeable so we could put our payload here and when the service calls bash it will execute our payload.
 	- The problem here is that since we are trying to get a shell using bash makes things complicated. SO to bypass this we get a `/bin/sh` python shell.
@@ -441,7 +441,7 @@ lrwxrwxrwx 1 root root 10 Nov 12 12:15 /usr/bin/python3 -> python3.12
 python3
 >>> import os; os.setuid(0); os.system("/bin/sh")
 ```
-![[Pasted image 20260330085625.png]]
+![Pasted image 20260330085625](../Attachments/Pasted%20image%2020260330085625.png)
 
 - I grab root flag:
-![[Pasted image 20260330085654.png]]
+![Pasted image 20260330085654](../Attachments/Pasted%20image%2020260330085654.png)

