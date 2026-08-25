@@ -2,54 +2,46 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
-nmap -sV -sC -vv 10.10.
-nmap -sU --top-ports=10 -vv 10.10.
+	```
+nmap -sV -sC -vv 10.10.1
+nmap -sU --top-ports=10 -vv 10.10.1
 
 ---OUTPUT-TCP---
 
-
 ---OUTPUT-UDP---
 
+```
+----
+## SMB Enumeration
+- t
+	```
 
 ```
+- crackmapexec/netexec
+	```
 
+```
+---
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
-gobuster dir
-
----OUTPUT---
-
+		```
 
 ```
 		- Next Directory
-			```bash
+			```
 
 ```
 	- VHost
-		```bash
-gobuster vhost
-
----OUTPUT---
-
+		```
 
 ```
 - Ffuf
-	```bash
-ffuf
-
----OUTPUT---
-
+	```
 
 ```
 - Dirsearch
-	```bash
-dirsearch -u
-
----OUTPUT---
-
+	```
 
 ```
 - Dirbuster

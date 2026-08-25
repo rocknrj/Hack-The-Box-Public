@@ -341,12 +341,12 @@ sudo nmap -sS -sV -sC -vv 10.129.20.14 -Pn -p-
 ```
 
 - Looking at the links I find something interesting (db has nothing of value and no xp_cmdshell)
-![[Pasted image 20260401093407.png]]
+![Pasted image 20260401093407](../Attachments/Pasted20image%2020260401093407.png)
 - There is another SQL07 link.
 
 - Also trying to grab the hash via `xpdirtree` but its not crackable so SQL07 is the only path to explore:
-![[Pasted image 20260401093645.png]]
-![[Pasted image 20260401093658.png]]
+![Pasted image 20260401093645](../Attachments/Pasted20image%2020260401093645.png)
+![Pasted image 20260401093658](../Attachments/Pasted20image%2020260401093658.png)
 
 - I then do LLMNR poisoning to add a dns record of our machine to the target SQL07:
 ```
@@ -398,18 +398,18 @@ ERROR(MSOLEDBSQL): Line 0: TCP Provider: An existing connection was forcibly clo
 
 - On my responder
 
-![[Pasted image 20260401094700.png]]
+![Pasted image 20260401094700](../Attachments/Pasted20image%2020260401094700.png)
 
 - I can log in to the target now:
 ```
 evil-winrm -i 10.129.20.176 -u 'sqlmgmt' -p 'bIhBbzMMnB82yx'
 ```
-![[Pasted image 20260401095056.png]]
+![Pasted image 20260401095056](../Attachments/Pasted20image%2020260401095056.png)
 - grab the user flag:
-![[Pasted image 20260401095148.png]]
+![Pasted image 20260401095148](../Attachments/Pasted20image%2020260401095148.png)
 
 - Checking winPEAS there is anotther port 8000 open (many more but this one under 10k). Using chisel or ligolo I tunnel this port running locally through to my machine.
-![[Pasted image 20260401105754.png]]
+![Pasted image 20260401105754](../Attachments/Pasted20image%2020260401105754.png)
 
  - Local side setup:
 ```
@@ -437,10 +437,10 @@ start
 ```
 
 ```
-![[Pasted image 20260402043128.png]]
+![Pasted image 20260402043128](../Attachments/Pasted20image%2020260402043128.png)
 
 - If we access the link shown in the page we get the full file for the service:
-![[Pasted image 20260402043359.png]]
+![Pasted image 20260402043359](../Attachments/Pasted20image%2020260402043359.png)
 
 ```
 <wsdl:definitions name="MonitoringService" targetNamespace="http://tempuri.org/">
@@ -934,7 +934,7 @@ print(kill(f"x -Force -ErrorAction SilentlyContinue; Get-ChildItem C:\\Users | O
 
 - I execute it and grab a reverse shell on my netcat listener:
 
-![[Pasted image 20260402060347.png]]
+![Pasted image 20260402060347](../Attachments/Pasted20image%2020260402060347.png)
 
 - I grab the root flag:
-![[Pasted image 20260402060405.png]]
+![Pasted image 20260402060405](../Attachments/Pasted20image%2020260402060405.png)

