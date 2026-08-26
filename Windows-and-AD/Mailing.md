@@ -199,7 +199,7 @@ Nothing of value..
 - We test for path traversal
 	- Windows host file:
 		- ..\..\Windows\System32\drivers\etc\hosts
-			![Pasted image 20250408080818.png](../Attachments/Pasted20image%2020250408080818.png)
+			![Pasted image 20250408080818.png](../Attachments/Pasted%20image%2020250408080818.png)
 		- The GET Request:
 ```
 GET /download.php?file=..\..\Windows\System32\drivers\etc\hosts HTTP/1.1
@@ -388,7 +388,9 @@ upload exploit2.odt
 --------------
 ------
 ## Notes
+```
 - nxc smb <ip>
 - nxc smv <ip> --shares
 - nxc smb <ip> -u '' -p '' --shares
 - 
+```

