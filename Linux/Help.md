@@ -4,18 +4,18 @@
 	- tried to access some files in the root folder in github and found README.md which showed the version. so searched for it in URL to find out version.
 		README.md worked and it showed the version (help.htb/support/README.md) = 1.0.2
 - **NEWTOOL SEARCHSPLOIT**
-	```
+```
 - searchsploit helpdeskz
 - searchsploit -x path/to/exploit : to examine
 searchsploit -m /path/to/exploit to copy exploit to working direcctory
 ```
 	- we find 2 exploit routes. (3 now)\
 - nmap shows 3 ports so we check the third one (3000):
-	```
+```
 help.htb:3000
 ```
-	- we see a message :
-		- |message|"Hi Shiv, To get access please find the credentials with given query"|
+- we see a message :
+	- |message|"Hi Shiv, To get access please find the credentials with given query"|
 - Performed dirsearch on http://help.htb:3000/
 	- found a lot of grapphql/ subdirectories
 	- checked the url : http://help.htb:3000/graphql and got the output :
@@ -24,20 +24,19 @@ help.htb:3000
 ## Method 1: Authenticated SQLi
 - search around to find graphql queiries
 	- username:
-		```
+```
 	http://help.htb:3000/graphql?query=query{user{username}}
 ```
-		- helpme@helpme.com
-
+- helpme@helpme.com
 	- password:
-		```
+```
 	http://help.htb:3000/graphql?query=query{user{password}}
 ```
-		- 5d3c93182bb20f07b994a7f617e99cff
-			 - its 32 characters so its an MD5 hash which can be cracked (to check, echo -n 'fdsfshfsio' | wc -c)
+- 5d3c93182bb20f07b994a7f617e99cff
+	 - its 32 characters so its an MD5 hash which can be cracked (to check, echo -n 'fdsfshfsio' | wc -c)
 				- godhelpmeplz
 - login to helpdeskz
-	```
+```
 searchsploit helpdeskz shows authenticated sqli
 searchsploit -x /path/to/exploit
 searchsploit -m /path/to/exploit
@@ -50,7 +49,7 @@ searchsploit -m /path/to/exploit
 	tried to access some files in the root folder
 		README.md worked and it showed the version (help.htb/support/README.md) = 1.0.2
 - **NEWTOOL SEARCHSPLOT**
-	```
+```
 searchsploit <name>
 searchsploit -x path/to/exploit : to examine
 searchsploit -m /path/to/exploit to copy exploit to working direcctory
@@ -70,7 +69,7 @@ searchsploit -m /path/to/exploit to copy exploit to working direcctory
 		- **in the helpdeskz github we see under controllers>staff>login_action.php that there is a table called staff with columns username and password. WE ALSO SEE IT USES SHA1 which is 40 characters long**
 		- to check admin:
 			- add this to url:
-				 ```
+ ```
 and (select (username) from staff limit 0,1) = 'admin'-- -
 ```
 				- we get is true. although we can try other usernames to see how it acts when false

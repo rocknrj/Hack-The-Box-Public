@@ -1,6 +1,6 @@
 10.10.11.47 leads to linkvortex.htb
 	add to /etc/hosts
-dirbuster reveals some interesting pages :
+- dirbuster reveals some interesting pages :
 	linkvortex.htb/author/admin
 	linkvortex.htb/rss
 	linkvortex.htb/author/admin/rss
